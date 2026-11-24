@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriDrone - ระบบจัดการตารางนัดฉีดพ่นยาด้วยโดรนการเกษตร</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    <meta name="theme-color" content="#059669">
     <!-- โหลด Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- โหลดฟอนต์ Prompt สำหรับภาษาไทยที่ทันสมัยและอ่านง่าย -->
@@ -108,14 +111,23 @@
                 </div>
             </div>
 
-            <!-- การ์ด 4: ยอดรายรับรวม -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3.5">
-                <div class="bg-indigo-50 text-indigo-600 p-3 rounded-xl shrink-0">
-                    <i data-lucide="wallet" class="w-6 h-6"></i>
+            <!-- การ์ด 4: ยอดรายรับรวม & รายเดือน (เลือกเดือนได้) -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between gap-2">
+                <div class="flex items-start gap-3">
+                    <div class="bg-indigo-50 text-indigo-600 p-2.5 rounded-xl shrink-0">
+                        <i data-lucide="wallet" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs sm:text-sm text-slate-500 font-medium">ยอดรายรับรวม</p>
+                        <p id="statTotalRevenue" class="text-xl sm:text-2xl font-bold text-slate-800">฿0</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-xs sm:text-sm text-slate-500 font-medium">ยอดรายรับรวม</p>
-                    <p id="statTotalRevenue" class="text-xl sm:text-2xl font-bold text-slate-800">฿0</p>
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                    <select id="revenueMonthSelect" onchange="updateDashboardStats()" aria-label="เลือกเดือนเพื่อดูยอดรายรับ"
+                        class="text-[11px] sm:text-xs font-medium bg-indigo-50/80 text-indigo-800 border border-indigo-200/80 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[135px] truncate">
+                        <option value="all">ทุกเดือน</option>
+                    </select>
+                    <span id="statMonthlyRevenue" class="text-xs sm:text-sm font-bold text-indigo-600 shrink-0">฿0</span>
                 </div>
             </div>
         </section>
@@ -694,9 +706,20 @@
             lucide.createIcons();
         }
 
-        // อัปเดตตัวเลขบนแดชบอร์ด
+        // แปลง YYYY-MM เป็นชื่อเดือนภาษาไทย + ปี พ.ศ. (เช่น 2026-11 -> พ.ย. 2569)
+        function formatThaiMonthYear(ymStr) {
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            const parts = ymStr.split('-');
+            if (parts.length !== 2) return ymStr;
+            const yearBE = parseInt(parts[0], 10) + 543;
+            const monthName = months[parseInt(parts[1], 10) - 1] || parts[1];
+            return `${monthName} ${yearBE}`;
+        }
+
+        // อัปเดตตัวเลขบนแดชบอร์ดและตัวเลือกเดือนสำหรับยอดรายรับรายเดือน
         function updateDashboardStats() {
             const today = getTodayStr(0);
+            const currentYM = today.slice(0, 7);
             const totalJobs = schedules.length;
             const pendingJobs = schedules.filter(s => s.status !== 'เสร็จสิ้น').length;
             const todayJobs = schedules.filter(s => s.appointmentDate === today && s.status !== 'เสร็จสิ้น').length;
@@ -704,11 +727,40 @@
             const totalRai = schedules.reduce((sum, item) => sum + Number(item.areaRai || 0), 0);
             const totalRevenue = schedules.reduce((sum, item) => sum + (Number(item.areaRai || 0) * Number(item.pricePerRai || 0)), 0);
 
+            // รวบรวมเดือนที่มีข้อมูล (รวมเดือนปัจจุบันไว้เสมอ)
+            const monthSet = new Set([currentYM]);
+            schedules.forEach(item => {
+                if (item.appointmentDate && item.appointmentDate.length >= 7) {
+                    monthSet.add(item.appointmentDate.slice(0, 7));
+                }
+            });
+            const sortedMonths = Array.from(monthSet).sort().reverse();
+
+            const monthSelect = document.getElementById('revenueMonthSelect');
+            const prevSelected = monthSelect.value;
+
+            monthSelect.innerHTML = `<option value="all">ทุกเดือน (รวม)</option>` +
+                sortedMonths.map(ym => `<option value="${ym}">${formatThaiMonthYear(ym)}</option>`).join('');
+
+            if (prevSelected && (prevSelected === 'all' || monthSet.has(prevSelected))) {
+                monthSelect.value = prevSelected;
+            } else {
+                monthSelect.value = currentYM;
+            }
+
+            const selectedMonth = monthSelect.value;
+            const selectedRevenue = selectedMonth === 'all'
+                ? totalRevenue
+                : schedules
+                    .filter(item => (item.appointmentDate || '').startsWith(selectedMonth))
+                    .reduce((sum, item) => sum + (Number(item.areaRai || 0) * Number(item.pricePerRai || 0)), 0);
+
             document.getElementById('statTotalJobs').innerHTML = `${totalJobs} <span class="text-xs font-normal text-slate-400">งาน</span>`;
             document.getElementById('statPendingJobs').innerHTML = `${pendingJobs} <span class="text-xs font-normal text-slate-400">งาน</span>`;
             document.getElementById('statTodayJobs').textContent = `วันนี้ ${todayJobs} งาน`;
             document.getElementById('statTotalRai').innerHTML = `${totalRai.toLocaleString('th-TH')} <span class="text-xs font-normal text-slate-400">ไร่</span>`;
             document.getElementById('statTotalRevenue').textContent = `฿${totalRevenue.toLocaleString('th-TH')}`;
+            document.getElementById('statMonthlyRevenue').textContent = `฿${selectedRevenue.toLocaleString('th-TH')}`;
         }
 
         // จัดรูปแบบวันที่ภาษาไทย (เช่น 24 พ.ย. 2569)
