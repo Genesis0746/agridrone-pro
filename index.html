@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriDrone - ระบบจัดการตารางนัดฉีดพ่นยาด้วยโดรนการเกษตร</title>
+    <!-- โหลด Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- โหลดฟอนต์ Prompt สำหรับภาษาไทยที่ทันสมัยและอ่านง่าย -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- โหลด Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        agri: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        tech: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- ส่วนหัว (Navbar) -->
+    <header class="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                    <i data-lucide="plane" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight leading-tight">AgriDrone Pro</h1>
+                    <p class="text-xs text-emerald-100">ระบบจัดการตารางบินฉีดพ่นยาการเกษตร</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="exportToCSV()" class="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white text-xs sm:text-sm font-medium px-3 py-2 rounded-xl transition backdrop-blur-sm border border-white/20" title="ดาวน์โหลดข้อมูลเป็นไฟล์ Excel/CSV">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">ส่งออก CSV</span>
+                </button>
+                <button onclick="openFormModal()" class="flex items-center gap-1.5 bg-white text-emerald-700 hover:bg-emerald-50 active:scale-95 text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>เพิ่มตารางนัด</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- เนื้อหาหลัก -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 space-y-6">
+
+        <!-- แดชบอร์ดสรุปภาพรวม (Dashboard Summary) -->
+        <section aria-label="สรุปภาพรวม" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <!-- การ์ด 1: งานทั้งหมด -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3.5">
+                <div class="bg-sky-50 text-sky-600 p-3 rounded-xl shrink-0">
+                    <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs sm:text-sm text-slate-500 font-medium">งานทั้งหมด</p>
+                    <p id="statTotalJobs" class="text-xl sm:text-2xl font-bold text-slate-800">0 <span class="text-xs font-normal text-slate-400">งาน</span></p>
+                </div>
+            </div>
+
+            <!-- การ์ด 2: งานที่รอดำเนินการ -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3.5">
+                <div class="bg-amber-50 text-amber-600 p-3 rounded-xl shrink-0">
+                    <i data-lucide="calendar-clock" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs sm:text-sm text-slate-500 font-medium">รอดำเนินการ</p>
+                    <p id="statPendingJobs" class="text-xl sm:text-2xl font-bold text-amber-600">0 <span class="text-xs font-normal text-slate-400">งาน</span></p>
+                    <p id="statTodayJobs" class="text-[11px] font-medium text-slate-400 mt-0.5">วันนี้ 0 งาน</p>
+                </div>
+            </div>
+
+            <!-- การ์ด 3: จำนวนไร่รวม -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3.5">
+                <div class="bg-emerald-50 text-emerald-600 p-3 rounded-xl shrink-0">
+                    <i data-lucide="map" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs sm:text-sm text-slate-500 font-medium">พื้นที่รวมทั้งหมด</p>
+                    <p id="statTotalRai" class="text-xl sm:text-2xl font-bold text-emerald-600">0 <span class="text-xs font-normal text-slate-400">ไร่</span></p>
+                </div>
+            </div>
+
+            <!-- การ์ด 4: ยอดรายรับรวม -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3.5">
+                <div class="bg-indigo-50 text-indigo-600 p-3 rounded-xl shrink-0">
+                    <i data-lucide="wallet" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-xs sm:text-sm text-slate-500 font-medium">ยอดรายรับรวม</p>
+                    <p id="statTotalRevenue" class="text-xl sm:text-2xl font-bold text-slate-800">฿0</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- แถบเครื่องมือค้นหาและกรองข้อมูล -->
+        <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+            <div class="flex flex-col md:flex-row gap-3">
+                <!-- ช่องค้นหา -->
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="searchInput" oninput="renderSchedules()" placeholder="ค้นหาชื่อลูกค้า, เบอร์โทร, สถานที่ หรือชนิดพืช..." 
+                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                </div>
+
+                <!-- ตัวกรองสถานะ & เรียงลำดับ -->
+                <div class="flex flex-wrap sm:flex-nowrap gap-2">
+                    <select id="statusFilter" onchange="renderSchedules()" class="flex-1 sm:w-44 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="all">สถานะ: ทั้งหมด</option>
+                        <option value="รอดำเนินการ">รอดำเนินการ</option>
+                        <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+                        <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+                        <option value="เลื่อนนัด">เลื่อนนัด</option>
+                    </select>
+
+                    <select id="sortOrder" onchange="renderSchedules()" class="flex-1 sm:w-48 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="dateAsc">เรียง: วันที่ใกล้สุดก่อน</option>
+                        <option value="dateDesc">เรียง: วันที่ล่าสุดก่อน</option>
+                        <option value="priceDesc">เรียง: ยอดเงินสูงสุด</option>
+                        <option value="raiDesc">เรียง: จำนวนไร่มากสุด</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ปุ่มจัดการข้อมูลตัวอย่าง -->
+            <div class="flex flex-wrap items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500 gap-2">
+                <span id="resultCountText">แสดงทั้งหมด 0 รายการ</span>
+                <div class="flex items-center gap-3">
+                    <button onclick="resetSampleData()" class="text-sky-600 hover:text-sky-700 hover:underline flex items-center gap-1">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> โหลดข้อมูลตัวอย่างใหม่
+                    </button>
+                    <button onclick="askClearAllData()" class="text-rose-500 hover:text-rose-600 hover:underline flex items-center gap-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> ล้างข้อมูลทั้งหมด
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- รายการตารางนัดหมาย (Schedule Cards Grid) -->
+        <section id="scheduleList" class="space-y-6">
+            <!-- รายการจะถูกสร้างด้วย JavaScript -->
+        </section>
+
+        <!-- หน้าจอเมื่อไม่พบข้อมูล -->
+        <div id="emptyState" class="hidden bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center space-y-3">
+            <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="calendar-plus" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-800">ยังไม่มีรายการนัดหมายฉีดพ่นยา</h3>
+            <p class="text-sm text-slate-500 max-w-md mx-auto">เริ่มต้นบันทึกรายการนัดหมายลูกค้า แปลงเกษตร และคำนวณค่าบริการพ่นยาด้วยโดรนได้เลย</p>
+            <div class="pt-2">
+                <button onclick="openFormModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl shadow-sm transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i> เพิ่มนัดหมายแรก
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8 text-center text-xs text-slate-400">
+        <p>AgriDrone Scheduler • ข้อมูลถูกบันทึกอัตโนมัติบนเบราว์เซอร์ของคุณ (Local Storage)</p>
+    </footer>
+
+    <!-- ========================================== -->
+    <!-- MODAL: ฟอร์มเพิ่ม / แก้ไขตารางนัดหมาย -->
+    <!-- ========================================== -->
+    <div id="formModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden my-auto animate-[fadeIn_0.2s_ease-out]">
+            <!-- Header Modal -->
+            <div class="bg-gradient-to-r from-emerald-600 to-sky-600 px-5 py-4 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="file-edit" class="w-5 h-5"></i>
+                    <h2 id="modalTitle" class="text-lg font-bold">เพิ่มตารางนัดฉีดพ่นยา</h2>
+                </div>
+                <button onclick="closeFormModal()" class="p-1.5 hover:bg-white/20 rounded-lg transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Form Body -->
+            <form id="scheduleForm" onsubmit="saveSchedule(event)" class="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
+                <input type="hidden" id="entryId">
+
+                <!-- แถบดึงข้อมูลลูกค้าเดิม (แสดงเฉพาะตอนเพิ่มนัดหมายใหม่) -->
+                <div id="repeatCustomerBox" class="bg-amber-50/90 p-3.5 rounded-xl border border-amber-200/80 space-y-1.5">
+                    <label for="existingCustomerSelect" class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                        <i data-lucide="user-check" class="w-4 h-4 text-amber-600"></i>
+                        <span>ดึงข้อมูลจากลูกค้าเดิม (ไม่ต้องกรอกใหม่)</span>
+                    </label>
+                    <select id="existingCustomerSelect" onchange="fillFromExistingCustomer(this.value)"
+                        class="w-full px-3 py-2 bg-white border border-amber-200 rounded-xl text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="">-- เลือกรายชื่อลูกค้าเดิม เพื่อคัดลอกข้อมูลแปลงและตั้งค่าโดรน --</option>
+                    </select>
+                </div>
+
+                <!-- กลุ่ม 1: ข้อมูลลูกค้า -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อลูกค้า / เกษตรกร <span class="text-rose-500">*</span></label>
+                        <input type="text" id="customerName" required placeholder="เช่น ลุงสมชาย ใจดี" 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">เบอร์โทรศัพท์ <span class="text-rose-500">*</span></label>
+                        <input type="tel" id="phone" required placeholder="เช่น 081-234-5678" 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+                </div>
+
+                <!-- กลุ่ม 2: สถานที่ / พิกัด -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">สถานที่ / พิกัดแปลง (หรือลิงก์ Google Maps) <span class="text-rose-500">*</span></label>
+                    <input type="text" id="location" required placeholder="เช่น ต.บ้านส้อง อ.เวียงสระ หรือวางลิงก์ https://maps.google.com/..." 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                </div>
+
+                <!-- กลุ่ม 3: ชนิดพืช และ ประเภทสาร -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ชนิดพืช <span class="text-rose-500">*</span></label>
+                        <select id="cropType" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                            <option value="ข้าว">🌾 ข้าว</option>
+                            <option value="ทุเรียน">🍈 ทุเรียน</option>
+                            <option value="ปาล์มน้ำมัน">🌴 ปาล์มน้ำมัน</option>
+                            <option value="อ้อย">🎋 อ้อย</option>
+                            <option value="มันสำปะหลัง">🌱 มันสำปะหลัง</option>
+                            <option value="ข้าวโพด">🌽 ข้าวโพด</option>
+                            <option value="ยางพารา">🌳 ยางพารา</option>
+                            <option value="อื่นๆ">🌿 อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ประเภทสาร / ยาที่พ่น <span class="text-rose-500">*</span></label>
+                        <select id="chemicalType" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                            <option value="ปุ๋ยทางใบ / ธาตุอาหาร">💧 ปุ๋ยทางใบ / ธาตุอาหาร</option>
+                            <option value="ยาฆ่าแมลง / กำจัดศัตรูพืช">🐛 ยาฆ่าแมลง / กำจัดศัตรูพืช</option>
+                            <option value="ยาป้องกันเชื้อรา">🍄 ยาป้องกันเชื้อรา</option>
+                            <option value="ยาคุมหญ้า / กำจัดวัชพืช">🌾 ยาคุมหญ้า / กำจัดวัชพืช</option>
+                            <option value="ฮอร์โมน / สารเร่งดอกผล">🌸 ฮอร์โมน / สารเร่งดอกผล</option>
+                            <option value="ผสมรวมหลายชนิด">🧪 ผสมรวมหลายชนิด</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- กลุ่ม 4: พื้นที่ (ไร่) และ ราคา (คำนวณอัตโนมัติ) -->
+                <div class="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-100 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                    <div>
+                        <label class="block text-xs font-semibold text-emerald-900 mb-1">ขนาดพื้นที่ (ไร่) <span class="text-rose-500">*</span></label>
+                        <input type="number" id="areaRai" step="0.5" min="0.5" required value="10" oninput="onAreaOrSwathChange()"
+                            class="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-emerald-900 mb-1">ค่าบริการต่อไร่ (บาท) <span class="text-rose-500">*</span></label>
+                        <input type="number" id="pricePerRai" step="10" min="0" required value="120" oninput="calculateAll()"
+                            class="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="bg-white p-2.5 rounded-xl border border-emerald-200 text-right sm:text-center">
+                        <span class="block text-[11px] text-slate-500">ยอดรวมค่าบริการ</span>
+                        <span id="calculatedTotalDisplay" class="text-lg font-bold text-emerald-600">฿1,200</span>
+                    </div>
+                </div>
+
+                <!-- กลุ่ม 4.5: ตั้งค่าพารามิเตอร์โดรนและคำนวณน้ำฉีดพ่น (ใหม่) -->
+                <div class="bg-sky-50/80 p-4 rounded-2xl border border-sky-200/80 space-y-3.5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sky-200/70 pb-2">
+                        <div class="flex items-center gap-2 text-sky-900 font-bold text-sm">
+                            <i data-lucide="droplets" class="w-4 h-4 text-sky-600"></i>
+                            <span>ตั้งค่าการบิน & คำนวณปริมาณน้ำฉีดพ่น</span>
+                        </div>
+                        <label class="inline-flex items-center gap-1.5 text-xs text-sky-700 cursor-pointer select-none">
+                            <input type="checkbox" id="autoDistanceToggle" checked onchange="onAreaOrSwathChange()" class="rounded text-sky-600 focus:ring-sky-500">
+                            <span>คำนวณระยะบินจากพื้นที่อัตโนมัติ</span>
+                        </label>
+                    </div>
+
+                    <!-- ปุ่มสลับโหมด 2 ฟังก์ชัน: 1. อัตราการไหล (L/min) | 2. อัตราการใช้งาน (ลิตร/ไร่) -->
+                    <input type="hidden" id="calcMode" value="flow">
+                    <div class="bg-white/90 p-1.5 rounded-xl border border-sky-200/80 grid grid-cols-2 gap-1.5">
+                        <button type="button" id="modeFlowBtn" onclick="setCalculationMode('flow')"
+                            class="py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-sky-600 text-white shadow-2xs">
+                            <i data-lucide="gauge" class="w-4 h-4"></i>
+                            <span>1. อัตราการไหล (ลิตร/นาที)</span>
+                        </button>
+                        <button type="button" id="modeRateBtn" onclick="setCalculationMode('ratePerRai')"
+                            class="py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-transparent text-sky-800 hover:bg-sky-50">
+                            <i data-lucide="sprout" class="w-4 h-4"></i>
+                            <span>2. อัตราการใช้งาน (ลิตร/ไร่)</span>
+                        </button>
+                    </div>
+
+                    <!-- แถว 1: ระยะห่างแนวบิน & ระยะทางบินพ่น (หรือ ไร่ ในโหมด 2) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-sky-900 mb-1">ความกว้างแนวพ่น / Swath (เมตร)</label>
+                            <div class="flex gap-1.5">
+                                <input type="number" id="swathWidth" step="0.5" min="1" value="5" oninput="onAreaOrSwathChange()"
+                                    class="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <button type="button" onclick="setSwath(4)" class="px-2.5 py-1 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-medium text-sky-700">4ม.</button>
+                                <button type="button" onclick="setSwath(5)" class="px-2.5 py-1 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-medium text-sky-700">5ม.</button>
+                                <button type="button" onclick="setSwath(6)" class="px-2.5 py-1 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-medium text-sky-700">6ม.</button>
+                            </div>
+                        </div>
+
+                        <!-- โหมด 1: ระยะทางบินพ่นรวม (เมตร) -->
+                        <div id="distanceInputGroup">
+                            <label class="block text-xs font-semibold text-sky-900 mb-1">ระยะทางบินพ่นรวม (เมตร) <span class="text-rose-500">*</span></label>
+                            <input type="number" id="sprayDistance" step="any" min="0" max="50000" required value="3200" oninput="onManualDistanceInput()"
+                                class="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl text-sm font-bold text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+
+                        <!-- โหมด 2: ขนาดพื้นที่ (ไร่) -->
+                        <div id="rateModeRaiInputGroup" class="hidden">
+                            <label class="block text-xs font-semibold text-emerald-900 mb-1">ขนาดพื้นที่ (ไร่) <span class="text-rose-500">*</span></label>
+                            <input type="number" id="rateModeRai" step="0.5" min="0.5" value="10" oninput="onRateModeRaiInput(this.value)"
+                                class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-sm font-bold text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+
+                    <!-- แถว 2: ความเร็วโดรน & (ฟังก์ชัน 1: อัตราการไหล L/min หรือ ฟังก์ชัน 2: อัตราการใช้งาน ลิตร/ไร่) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-sky-900 mb-1">ความเร็วโดรน (เมตร/วินาที - m/s) <span class="text-rose-500">*</span></label>
+                            <div class="flex gap-1.5">
+                                <input type="number" id="droneSpeed" step="0.5" min="0.5" required value="5.0" oninput="calculateAll()"
+                                    class="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <button type="button" onclick="setSpeed(4)" class="px-2.5 py-1 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-medium text-slate-600">4.0</button>
+                                <button type="button" onclick="setSpeed(5)" class="px-2.5 py-1 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-medium text-slate-600">5.0</button>
+                                <button type="button" onclick="setSpeed(6)" class="px-2.5 py-1 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-medium text-slate-600">6.0</button>
+                            </div>
+                        </div>
+
+                        <!-- ฟังก์ชันที่ 1: อัตราการไหล (ลิตร/นาที - L/min) -->
+                        <div id="flowRateInputGroup">
+                            <label class="block text-xs font-semibold text-sky-900 mb-1">อัตราการไหล (ลิตร/นาที - L/min) <span class="text-rose-500">*</span></label>
+                            <div class="flex gap-1.5">
+                                <input type="number" id="flowRate" step="0.1" min="0.1" required value="3.0" oninput="calculateAll()"
+                                    class="w-full px-3 py-2 bg-white border border-sky-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <button type="button" onclick="setFlow(2.4)" class="px-2.5 py-1 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-medium text-slate-600">2.4</button>
+                                <button type="button" onclick="setFlow(3.0)" class="px-2.5 py-1 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-medium text-slate-600">3.0</button>
+                                <button type="button" onclick="setFlow(4.5)" class="px-2.5 py-1 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-medium text-slate-600">4.5</button>
+                            </div>
+                        </div>
+
+                        <!-- ฟังก์ชันที่ 2: อัตราการใช้งาน (ลิตร/ไร่) -->
+                        <div id="usageRateInputGroup" class="hidden">
+                            <label class="block text-xs font-semibold text-emerald-900 mb-1">อัตราการใช้งาน (ลิตร/ไร่) <span class="text-rose-500">*</span></label>
+                            <div class="flex gap-1.5">
+                                <input type="number" id="usageRatePerRai" step="0.5" min="0.5" value="5.0" oninput="calculateAll()"
+                                    class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-sm font-bold text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <button type="button" onclick="setUsageRate(3)" class="px-2.5 py-1 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-medium text-emerald-700">3ล.</button>
+                                <button type="button" onclick="setUsageRate(5)" class="px-2.5 py-1 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-medium text-emerald-700">5ล.</button>
+                                <button type="button" onclick="setUsageRate(8)" class="px-2.5 py-1 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-medium text-emerald-700">8ล.</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- แถว 3: ความจุถังโดรน (ลิตร) + ปุ่มเลือกด่วน -->
+                    <div>
+                        <label class="block text-xs font-semibold text-sky-900 mb-1">ความจุถังน้ำยาโดรน (ลิตร) <span class="text-rose-500">*</span></label>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <input type="number" id="tankCapacity" step="1" min="1" required value="30" oninput="calculateAll()"
+                                class="w-28 px-3 py-2 bg-white border border-sky-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <div class="flex flex-wrap gap-1.5">
+                                <button type="button" onclick="setTank(10)" class="px-2.5 py-1.5 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-semibold text-sky-700 transition">10L</button>
+                                <button type="button" onclick="setTank(16)" class="px-2.5 py-1.5 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-semibold text-sky-700 transition">16L</button>
+                                <button type="button" onclick="setTank(20)" class="px-2.5 py-1.5 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-semibold text-sky-700 transition">20L</button>
+                                <button type="button" onclick="setTank(30)" class="px-2.5 py-1.5 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-semibold text-sky-700 transition">30L</button>
+                                <button type="button" onclick="setTank(40)" class="px-2.5 py-1.5 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-semibold text-sky-700 transition">40L</button>
+                                <button type="button" onclick="setTank(50)" class="px-2.5 py-1.5 bg-white hover:bg-sky-100 border border-sky-200 rounded-lg text-xs font-semibold text-sky-700 transition">50L</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- แผงแสดงผลการคำนวณแบบเรียลไทม์ (Real-time Calculation Panel) -->
+                    <div class="bg-white rounded-xl p-3 border border-sky-200 shadow-2xs grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+                        <div class="p-2 rounded-lg bg-sky-50/70">
+                            <span class="block text-[11px] text-slate-500">💧 ปริมาณน้ำรวม</span>
+                            <span id="calcTotalWater" class="text-base font-bold text-sky-700">32.0 ลิตร</span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-emerald-50/70">
+                            <span id="calcSecondMetricLabel" class="block text-[11px] text-slate-500">🌿 อัตราพ่นเฉลี่ย</span>
+                            <span id="calcWaterPerRai" class="text-base font-bold text-emerald-700">3.2 ลิตร/ไร่</span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-amber-50/70">
+                            <span class="block text-[11px] text-slate-500">🛢️ จำนวนรอบเติมถัง</span>
+                            <span id="calcTankRounds" class="text-base font-bold text-amber-700">2 ถัง <span class="text-[11px] font-normal text-slate-500">(1.07)</span></span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-indigo-50/70">
+                            <span class="block text-[11px] text-slate-500">⏱️ เวลาบินพ่นสุทธิ</span>
+                            <span id="calcFlightTime" class="text-base font-bold text-indigo-700">10 น. 40 วิ.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- กลุ่ม 5: วันที่ เวลานัดหมาย และ สถานะ -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่นัดหมาย <span class="text-rose-500">*</span></label>
+                        <input type="date" id="appointmentDate" required
+                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">ช่วงเวลานัดหมาย</label>
+                        <select id="timeSlot" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                            <option value="ช่วงเช้า (06:00 - 10:00 น.)">🌅 ช่วงเช้า (06:00 - 10:00 น.)</option>
+                            <option value="ช่วงสาย (10:00 - 12:00 น.)">☀️ ช่วงสาย (10:00 - 12:00 น.)</option>
+                            <option value="ช่วงบ่าย (13:00 - 15:30 น.)">🌤️ ช่วงบ่าย (13:00 - 15:30 น.)</option>
+                            <option value="ช่วงเย็น (15:30 - 18:00 น.)">🌇 ช่วงเย็น (15:30 - 18:00 น.)</option>
+                            <option value="ทั้งวัน (เช้า-เย็น)">🕒 ทั้งวัน (เช้า-เย็น)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">สถานะงาน</label>
+                        <select id="status" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
+                            <option value="รอดำเนินการ">🟡 รอดำเนินการ</option>
+                            <option value="กำลังดำเนินการ">🔵 กำลังดำเนินการ</option>
+                            <option value="เสร็จสิ้น">🟢 เสร็จสิ้น</option>
+                            <option value="เลื่อนนัด">🔴 เลื่อนนัด</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- กลุ่ม 6: หมายเหตุ -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุเพิ่มเติม (ข้อควรระวัง / สภาพพื้นที่)</label>
+                    <textarea id="notes" rows="2" placeholder="เช่น ระวังสายไฟแรงสูงด้านทิศเหนือ, ลูกค้าเตรียมน้ำไว้ให้แล้ว, ลมแรงช่วงบ่าย..." 
+                        class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"></textarea>
+                </div>
+
+                <!-- ปุ่มบันทึก / ยกเลิก -->
+                <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeFormModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition">
+                        ยกเลิก
+                    </button>
+                    <button type="submit" class="flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition">
+                        <i data-lucide="save" class="w-4 h-4"></i> บันทึกตารางนัด
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: กล่องข้อความยืนยัน (แทน confirm()) -->
+    <!-- ========================================== -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 space-y-4 text-center">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 id="confirmTitle" class="text-base font-bold text-slate-800">ยืนยันการทำรายการ</h3>
+                <p id="confirmMessage" class="text-sm text-slate-500 mt-1">คุณต้องการลบข้อมูลนี้ใช่หรือไม่?</p>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-xl text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+                    ยกเลิก
+                </button>
+                <button id="confirmActionBtn" class="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-rose-600 text-white hover:bg-rose-700 transition">
+                    ยืนยัน
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TOAST NOTIFICATION (แจ้งเตือนมุมล่าง) -->
+    <!-- ========================================== -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-800 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-sm font-medium">
+            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+            <span id="toastMessage">บันทึกข้อมูลเรียบร้อย</span>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. การจัดการสถานะและข้อมูลเริ่มต้น (State & Sample Data)
+        // ==========================================
+        const STORAGE_KEY = 'agridrone_schedules_v1';
+        let schedules = [];
+        let pendingConfirmCallback = null;
+        let expandedCompletedIds = new Set(); // เก็บ ID ของงานที่เสร็จสิ้นแล้วแต่ผู้ใช้กดขยายดูรายละเอียด
+
+        // สร้างวันที่ปัจจุบันในรูปแบบ YYYY-MM-DD
+        function getTodayStr(offsetDays = 0) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            return d.toISOString().split('T')[0];
+        }
+
+        // ข้อมูลตัวอย่างภาษาไทย 4 รายการ (เว้นวันที่นัดหมายให้ว่างสำหรับเตรียมนำขึ้นออนไลน์)
+        function getDefaultSampleData() {
+            return [
+                {
+                    id: 'job-101',
+                    customerName: 'คุณสมชาย ใจดี (ผู้ใหญ่ชาย)',
+                    phone: '089-456-7890',
+                    location: 'ต.บ้านส้อง อ.เวียงสระ จ.สุราษฎร์ธานี',
+                    cropType: 'ทุเรียน',
+                    chemicalType: 'ฮอร์โมน / สารเร่งดอกผล',
+                    areaRai: 15,
+                    pricePerRai: 200,
+                    swathWidth: 5,
+                    sprayDistance: 4800,
+                    droneSpeed: 4.5,
+                    flowRate: 3.6,
+                    tankCapacity: 30,
+                    appointmentDate: '',
+                    timeSlot: 'ช่วงเช้า (06:00 - 10:00 น.)',
+                    status: 'รอดำเนินการ',
+                    notes: 'แปลงทุเรียนหมอนทอง ระวังแนวสายไฟแรงสูงริมถนนใหญ่'
+                },
+                {
+                    id: 'job-102',
+                    customerName: 'เจ๊นงลักษณ์ สวนปาล์ม',
+                    phone: '081-987-6543',
+                    location: 'https://maps.google.com/?q=8.6385,99.3652',
+                    cropType: 'ปาล์มน้ำมัน',
+                    chemicalType: 'ปุ๋ยทางใบ / ธาตุอาหาร',
+                    areaRai: 35,
+                    pricePerRai: 150,
+                    swathWidth: 6,
+                    sprayDistance: 9333,
+                    droneSpeed: 5.5,
+                    flowRate: 4.5,
+                    tankCapacity: 40,
+                    appointmentDate: '',
+                    timeSlot: 'ช่วงเช้า (06:00 - 10:00 น.)',
+                    status: 'รอดำเนินการ',
+                    notes: 'ปาล์มอายุ 6 ปี เจ้าของสวนเตรียมน้ำและผสมยาไว้รอหน้าแปลง'
+                },
+                {
+                    id: 'job-103',
+                    customerName: 'ลุงบุญมี ทำนา',
+                    phone: '092-334-1122',
+                    location: 'ทุ่งนาคลองฉนวน หมู่ 4 อ.เวียงสระ',
+                    cropType: 'ข้าว',
+                    chemicalType: 'ยาฆ่าแมลง / กำจัดศัตรูพืช',
+                    areaRai: 25,
+                    pricePerRai: 100,
+                    swathWidth: 5,
+                    sprayDistance: 8000,
+                    droneSpeed: 6.0,
+                    flowRate: 3.0,
+                    tankCapacity: 30,
+                    appointmentDate: '',
+                    timeSlot: 'ช่วงเย็น (15:30 - 18:00 น.)',
+                    status: 'เสร็จสิ้น',
+                    notes: 'ฉีดพ่นป้องกันเพลี้ยกระโดดสีน้ำตาล เรียบร้อยดี จ่ายเงินสดแล้ว'
+                },
+                {
+                    id: 'job-104',
+                    customerName: 'เสี่ยวิชัย ไร่อ้อย',
+                    phone: '086-555-8899',
+                    location: 'บ้านห้วยมุด อ.เวียงสระ จ.สุราษฎร์ธานี',
+                    cropType: 'อ้อย',
+                    chemicalType: 'ยาคุมหญ้า / กำจัดวัชพืช',
+                    areaRai: 40,
+                    pricePerRai: 130,
+                    swathWidth: 5,
+                    sprayDistance: 12800,
+                    droneSpeed: 5.0,
+                    flowRate: 4.0,
+                    tankCapacity: 40,
+                    appointmentDate: '',
+                    timeSlot: 'ช่วงบ่าย (13:00 - 15:30 น.)',
+                    status: 'กำลังดำเนินการ',
+                    notes: 'อ้อยตอ 2 ตรวจเช็กแบตเตอรี่สำรองให้พร้อมก่อนบิน'
+                }
+            ];
+        }
+
+        // ฟังก์ชันคำนวณพารามิเตอร์การบินและน้ำฉีดพ่นสำหรับแต่ละงาน (รองรับ 2 โหมด: flow และ ratePerRai)
+        function computeSprayMetrics(item) {
+            const areaRai = Number(item.areaRai) || 0;
+            const pricePerRai = Number(item.pricePerRai) || 0;
+            const swathWidth = Number(item.swathWidth) || 5;
+            // หากข้อมูลเก่าไม่มี sprayDistance ให้คำนวณจากพื้นที่ (1 ไร่ = 1,600 ตร.ม.)
+            const sprayDistance = Number(item.sprayDistance) || Math.round((areaRai * 1600) / swathWidth);
+            const droneSpeed = Number(item.droneSpeed) || 5.0;
+            const tankCapacity = Number(item.tankCapacity) || 30;
+            const calcMode = item.calcMode === 'ratePerRai' ? 'ratePerRai' : 'flow';
+
+            const totalSeconds = droneSpeed > 0 ? (sprayDistance / droneSpeed) : 0;
+            const totalMinutes = totalSeconds / 60;
+
+            let flowRate = Number(item.flowRate) || 3.0;
+            let usageRatePerRai = Number(item.usageRatePerRai) || 5.0;
+            let totalWaterLiters = 0;
+            let waterPerRai = 0;
+
+            if (calcMode === 'ratePerRai') {
+                // โหมด 2: กำหนดอัตราการใช้งาน (ลิตร/ไร่) -> คำนวณน้ำรวม และคำนวณย้อนกลับเป็นอัตราการไหล (L/min)
+                waterPerRai = usageRatePerRai;
+                totalWaterLiters = areaRai * usageRatePerRai;
+                flowRate = totalMinutes > 0 ? (totalWaterLiters / totalMinutes) : 0;
+            } else {
+                // โหมด 1: กำหนดอัตราการไหล (L/min) -> คำนวณน้ำรวม และอัตราพ่นเฉลี่ย (ลิตร/ไร่)
+                totalWaterLiters = totalMinutes * flowRate;
+                waterPerRai = areaRai > 0 ? (totalWaterLiters / areaRai) : 0;
+                usageRatePerRai = waterPerRai;
+            }
+
+            const exactTanks = tankCapacity > 0 ? (totalWaterLiters / tankCapacity) : 0;
+            const ceilTanks = Math.ceil(exactTanks);
+            const totalPrice = areaRai * pricePerRai;
+
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = Math.round(totalSeconds % 60);
+
+            return {
+                calcMode,
+                areaRai,
+                pricePerRai,
+                totalPrice,
+                swathWidth,
+                sprayDistance,
+                droneSpeed,
+                flowRate,
+                usageRatePerRai,
+                tankCapacity,
+                totalSeconds,
+                totalMinutes,
+                mins,
+                secs,
+                totalWaterLiters,
+                waterPerRai,
+                exactTanks,
+                ceilTanks
+            };
+        }
+
+        // โหลดข้อมูลเมื่อเปิดหน้าเว็บ
+        function initApp() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData !== null) {
+                    schedules = JSON.parse(savedData);
+                } else {
+                    schedules = getDefaultSampleData();
+                    saveToLocalStorage();
+                }
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการโหลดข้อมูล:', error);
+                schedules = getDefaultSampleData();
+            }
+            renderAll();
+        }
+
+        // บันทึกลง localStorage
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(schedules));
+            } catch (error) {
+                showToast('ไม่สามารถบันทึกข้อมูลลงเครื่องได้');
+            }
+        }
+
+        // ==========================================
+        // 2. การแสดงผลแดชบอร์ดและรายการ (Render UI)
+        // ==========================================
+        function renderAll() {
+            updateDashboardStats();
+            renderSchedules();
+            lucide.createIcons();
+        }
+
+        // อัปเดตตัวเลขบนแดชบอร์ด
+        function updateDashboardStats() {
+            const today = getTodayStr(0);
+            const totalJobs = schedules.length;
+            const pendingJobs = schedules.filter(s => s.status !== 'เสร็จสิ้น').length;
+            const todayJobs = schedules.filter(s => s.appointmentDate === today && s.status !== 'เสร็จสิ้น').length;
+            
+            const totalRai = schedules.reduce((sum, item) => sum + Number(item.areaRai || 0), 0);
+            const totalRevenue = schedules.reduce((sum, item) => sum + (Number(item.areaRai || 0) * Number(item.pricePerRai || 0)), 0);
+
+            document.getElementById('statTotalJobs').innerHTML = `${totalJobs} <span class="text-xs font-normal text-slate-400">งาน</span>`;
+            document.getElementById('statPendingJobs').innerHTML = `${pendingJobs} <span class="text-xs font-normal text-slate-400">งาน</span>`;
+            document.getElementById('statTodayJobs').textContent = `วันนี้ ${todayJobs} งาน`;
+            document.getElementById('statTotalRai').innerHTML = `${totalRai.toLocaleString('th-TH')} <span class="text-xs font-normal text-slate-400">ไร่</span>`;
+            document.getElementById('statTotalRevenue').textContent = `฿${totalRevenue.toLocaleString('th-TH')}`;
+        }
+
+        // จัดรูปแบบวันที่ภาษาไทย (เช่น 24 พ.ย. 2569)
+        function formatThaiDate(dateStr) {
+            if (!dateStr) return '-';
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            const yearBE = parseInt(parts[0], 10) + 543;
+            const monthName = months[parseInt(parts[1], 10) - 1];
+            const day = parseInt(parts[2], 10);
+            
+            const today = getTodayStr(0);
+            const tomorrow = getTodayStr(1);
+            let badge = '';
+            if (dateStr === today) badge = '<span class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-rose-100 text-rose-600 rounded">วันนี้</span>';
+            else if (dateStr === tomorrow) badge = '<span class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-sky-100 text-sky-600 rounded">พรุ่งนี้</span>';
+
+            return `${day} ${monthName} ${yearBE}${badge}`;
+        }
+
+        // สีและป้ายสถานะ
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'เสร็จสิ้น':
+                    return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+                case 'กำลังดำเนินการ':
+                    return 'bg-sky-100 text-sky-700 border-sky-200';
+                case 'เลื่อนนัด':
+                    return 'bg-rose-100 text-rose-700 border-rose-200';
+                default: // รอดำเนินการ
+                    return 'bg-amber-100 text-amber-800 border-amber-200';
+            }
+        }
+
+        // สร้างลิงก์แผนที่อัจฉริยะ (รองรับทั้ง URL และชื่อสถานที่)
+        function getMapUrl(locationText) {
+            const trimmed = locationText.trim();
+            if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+                return trimmed;
+            }
+            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trimmed)}`;
+        }
+
+        // แสดงรายการนัดหมายทั้งหมดตามตัวกรอง
+        function renderSchedules() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+
+            // กรองข้อมูล
+            let filtered = schedules.filter(item => {
+                const matchStatus = statusFilter === 'all' || item.status === statusFilter;
+                const matchSearch = !searchQuery || 
+                    item.customerName.toLowerCase().includes(searchQuery) ||
+                    item.phone.toLowerCase().includes(searchQuery) ||
+                    item.location.toLowerCase().includes(searchQuery) ||
+                    item.cropType.toLowerCase().includes(searchQuery) ||
+                    item.chemicalType.toLowerCase().includes(searchQuery);
+                return matchStatus && matchSearch;
+            });
+
+            // เรียงลำดับข้อมูล
+            filtered.sort((a, b) => {
+                if (sortOrder === 'dateAsc') return a.appointmentDate.localeCompare(b.appointmentDate);
+                if (sortOrder === 'dateDesc') return b.appointmentDate.localeCompare(a.appointmentDate);
+                if (sortOrder === 'priceDesc') return (b.areaRai * b.pricePerRai) - (a.areaRai * a.pricePerRai);
+                if (sortOrder === 'raiDesc') return b.areaRai - a.areaRai;
+                return 0;
+            });
+
+            document.getElementById('resultCountText').textContent = `แสดง ${filtered.length} จากทั้งหมด ${schedules.length} รายการ`;
+
+            const listContainer = document.getElementById('scheduleList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            // แยกงานที่ยังไม่เสร็จ/กำลังดำเนินการ ออกจากงานที่เสร็จสิ้นแล้ว เพื่อให้เรียงชิดติดกันไม่เกิดช่องว่าง
+            const activeItems = filtered.filter(item => item.status !== 'เสร็จสิ้น');
+            const completedItems = filtered.filter(item => item.status === 'เสร็จสิ้น');
+
+            // สร้าง HTML สำหรับการ์ดเต็มใบ (งานปกติ หรือ งานเสร็จสิ้นที่กดขยายดูรายละเอียด)
+            function buildFullCardHTML(item) {
+                const m = computeSprayMetrics(item);
+                const isCompleted = item.status === 'เสร็จสิ้น';
+                const statusClass = getStatusBadge(item.status);
+                const mapHref = getMapUrl(item.location);
+
+                return `
+                <article class="bg-white rounded-2xl shadow-sm border ${isCompleted ? 'border-emerald-200/80 bg-emerald-50/10' : 'border-slate-200/80'} p-4 sm:p-5 flex flex-col justify-between gap-4 hover:shadow-md transition">
+                    <!-- ส่วนบน: ชื่อลูกค้า + สถานะ -->
+                    <div class="space-y-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 class="text-base sm:text-lg font-bold text-slate-800 ${isCompleted ? 'line-through text-slate-500' : ''}">
+                                        ${escapeHTML(item.customerName)}
+                                    </h3>
+                                </div>
+                                <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                    <span class="flex items-center gap-1 font-medium text-slate-700">
+                                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                        ${formatThaiDate(item.appointmentDate)}
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-sky-600"></i>
+                                        ${escapeHTML(item.timeSlot)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${statusClass}">
+                                    ${escapeHTML(item.status)}
+                                </span>
+                                ${isCompleted ? `
+                                <button onclick="toggleExpandCompleted('${item.id}')" 
+                                    class="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition" 
+                                    title="ย่อหน้าต่างกลับ">
+                                    <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                                </button>` : ''}
+                            </div>
+                        </div>
+
+                        <!-- รายละเอียดแปลงเกษตร -->
+                        <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs sm:text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400">พืช:</span>
+                                <span class="font-semibold text-slate-700">${escapeHTML(item.cropType)}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400">พื้นที่:</span>
+                                <span class="font-semibold text-emerald-700">${m.areaRai} ไร่ <span class="text-xs font-normal text-slate-400">(@฿${m.pricePerRai})</span></span>
+                            </div>
+                            <div class="col-span-2 flex items-center gap-2">
+                                <span class="text-slate-400 shrink-0">สารพ่น:</span>
+                                <span class="font-medium text-sky-700 truncate">${escapeHTML(item.chemicalType)}</span>
+                            </div>
+                        </div>
+
+                        <!-- สรุปพารามิเตอร์โดรนและน้ำฉีดพ่น (Drone Spray Summary Grid) -->
+                        <div class="bg-sky-50/60 rounded-xl p-3 border border-sky-100 space-y-2">
+                            <div class="grid grid-cols-3 gap-2 text-center">
+                                <div class="bg-white rounded-lg p-2 border border-sky-100">
+                                    <span class="block text-[10px] text-slate-400">💧 น้ำรวม / เฉลี่ย</span>
+                                    <span class="text-xs sm:text-sm font-bold text-sky-700">${m.totalWaterLiters.toFixed(1)} ล.</span>
+                                    <span class="block text-[10px] font-medium text-emerald-600">(${m.waterPerRai.toFixed(1)} ล./ไร่)</span>
+                                </div>
+                                <div class="bg-white rounded-lg p-2 border border-sky-100">
+                                    <span class="block text-[10px] text-slate-400">🛢️ จำนวนถัง</span>
+                                    <span class="text-xs sm:text-sm font-bold text-amber-600">${m.ceilTanks} ถัง</span>
+                                    <span class="block text-[10px] text-slate-500">(ถังละ ${m.tankCapacity} ล.)</span>
+                                </div>
+                                <div class="bg-white rounded-lg p-2 border border-sky-100">
+                                    <span class="block text-[10px] text-slate-400">⏱️ เวลาบินพ่น</span>
+                                    <span class="text-xs sm:text-sm font-bold text-indigo-700">${m.mins} น. ${m.secs} วิ.</span>
+                                    <span class="block text-[10px] text-slate-500">(${m.totalMinutes.toFixed(1)} นาที)</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-slate-600 px-1 pt-0.5">
+                                <span>📏 ระยะพ่น: <strong class="text-slate-800">${m.sprayDistance.toLocaleString('th-TH')} ม.</strong></span>
+                                <span>🚀 เร็ว: <strong class="text-slate-800">${m.droneSpeed} m/s</strong></span>
+                                <span>🚿 ไหล: <strong class="text-slate-800">${m.flowRate} L/min</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- สถานที่ & หมายเหตุ -->
+                        <div class="space-y-1.5 text-xs">
+                            <div class="flex items-start gap-1.5 text-slate-600">
+                                <i data-lucide="map-pin" class="w-4 h-4 text-rose-500 shrink-0 mt-0.5"></i>
+                                <span class="break-all">${escapeHTML(item.location)}</span>
+                            </div>
+                            ${item.notes ? `
+                            <div class="flex items-start gap-1.5 text-amber-800 bg-amber-50/80 px-2.5 py-1.5 rounded-lg border border-amber-100">
+                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5"></i>
+                                <span>${escapeHTML(item.notes)}</span>
+                            </div>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- ส่วนล่าง: ยอดเงิน + ปุ่มดำเนินการด่วน -->
+                    <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <span class="text-[11px] text-slate-400 block">ค่าบริการรวม</span>
+                            <span class="text-base sm:text-lg font-bold text-emerald-600">฿${m.totalPrice.toLocaleString('th-TH')}</span>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <!-- ปุ่มนัดซ้ำเจ้าเดิม (1 คลิก) -->
+                            <button onclick="repeatSchedule('${item.id}')" 
+                                class="px-2.5 py-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 text-xs font-semibold flex items-center gap-1 transition" 
+                                title="สร้างนัดหมายใหม่จากข้อมูลลูกค้าและแปลงนี้">
+                                <i data-lucide="repeat" class="w-3.5 h-3.5 text-amber-600"></i>
+                                <span>นัดซ้ำ</span>
+                            </button>
+
+                            <!-- ปุ่มสลับสถานะเสร็จสิ้นรวดเร็ว -->
+                            <button onclick="toggleComplete('${item.id}')" 
+                                class="p-2 rounded-xl border text-xs font-medium flex items-center gap-1 transition ${isCompleted ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'}"
+                                title="${isCompleted ? 'เปลี่ยนกลับเป็นรอดำเนินการ' : 'ทำเครื่องหมายว่าเสร็จสิ้น'}">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                <span class="hidden sm:inline">${isCompleted ? 'เสร็จแล้ว' : 'เสร็จสิ้น'}</span>
+                            </button>
+
+                            <!-- ปุ่มคัดลอกสรุปส่ง LINE -->
+                            <button onclick="copyJobSummary('${item.id}')" 
+                                class="p-2 rounded-xl bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition" 
+                                title="คัดลอกสรุปงานส่ง LINE">
+                                <i data-lucide="copy" class="w-4 h-4"></i>
+                            </button>
+
+                            <!-- ปุ่มโทรออก -->
+                            <a href="tel:${escapeHTML(item.phone)}" 
+                                class="p-2 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition" 
+                                title="โทรหา ${escapeHTML(item.phone)}">
+                                <i data-lucide="phone" class="w-4 h-4"></i>
+                            </a>
+
+                            <!-- ปุ่มเปิดแผนที่ -->
+                            <a href="${mapHref}" target="_blank" rel="noopener noreferrer"
+                                class="p-2 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition" 
+                                title="เปิดพิกัดใน Google Maps">
+                                <i data-lucide="navigation" class="w-4 h-4"></i>
+                            </a>
+
+                            <!-- ปุ่มแก้ไข -->
+                            <button onclick="openFormModal('${item.id}')" 
+                                class="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition" 
+                                title="แก้ไขข้อมูล">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+
+                            <!-- ปุ่มลบ -->
+                            <button onclick="askDeleteSchedule('${item.id}', '${escapeHTML(item.customerName)}')" 
+                                class="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition" 
+                                title="ลบรายการ">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+                `;
+            }
+
+            // สร้าง HTML สำหรับการ์ดย่อของงานที่เสร็จสิ้นแล้ว
+            function buildCompactCompletedCardHTML(item) {
+                const m = computeSprayMetrics(item);
+                return `
+                <article class="bg-emerald-50/50 rounded-xl shadow-2xs border border-emerald-200/80 px-3 py-2 flex items-center justify-between gap-2 hover:bg-emerald-50 transition">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <button onclick="toggleComplete('${item.id}')" class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 hover:bg-emerald-700 transition" title="เสร็จสิ้นแล้ว (คลิกเพื่อเปลี่ยนกลับเป็นรอดำเนินการ)">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <h3 class="text-xs sm:text-sm font-semibold text-slate-600 line-through truncate">
+                                    ${escapeHTML(item.customerName)}
+                                </h3>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700 shrink-0">
+                                    เสร็จสิ้น
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-x-2 text-[11px] text-slate-500 truncate">
+                                <span>${formatThaiDate(item.appointmentDate)}</span>
+                                <span>• ${escapeHTML(item.cropType)} (${m.areaRai} ไร่)</span>
+                                <span class="font-semibold text-emerald-700">• ฿${m.totalPrice.toLocaleString('th-TH')}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="repeatSchedule('${item.id}')" 
+                            class="px-2 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 text-[11px] font-semibold flex items-center gap-1 transition" 
+                            title="สร้างนัดหมายรอบใหม่จากข้อมูลลูกค้านี้">
+                            <i data-lucide="repeat" class="w-3 h-3 text-amber-600"></i>
+                            <span>นัดซ้ำ</span>
+                        </button>
+                        <button onclick="toggleExpandCompleted('${item.id}')" 
+                            class="p-1 rounded-lg bg-white text-slate-500 border border-slate-200 hover:bg-slate-100 transition" 
+                            title="ขยายดูรายละเอียดทั้งหมด">
+                            <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </article>
+                `;
+            }
+
+            let htmlOutput = '';
+
+            // 1. ส่วนงานที่ยังไม่เสร็จ / กำลังดำเนินการ
+            if (activeItems.length > 0) {
+                htmlOutput += `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${activeItems.map(item => buildFullCardHTML(item)).join('')}
+                </div>`;
+            }
+
+            // 2. ส่วนงานที่เสร็จสิ้นแล้ว (แยกมาเรียงต่อกันเป็นระเบียบ ชิดกัน ไม่มีช่องว่างโหว่)
+            if (completedItems.length > 0) {
+                const compactCompleted = completedItems.filter(item => !expandedCompletedIds.has(item.id));
+                const expandedCompleted = completedItems.filter(item => expandedCompletedIds.has(item.id));
+                const completedTotalRai = completedItems.reduce((sum, item) => sum + Number(item.areaRai || 0), 0);
+                const completedTotalPrice = completedItems.reduce((sum, item) => sum + (Number(item.areaRai || 0) * Number(item.pricePerRai || 0)), 0);
+
+                htmlOutput += `
+                <div class="space-y-3 pt-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+                        <div class="flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-800">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                            <span>งานที่เสร็จสิ้นแล้ว (${completedItems.length} งาน)</span>
+                        </div>
+                        <div class="text-xs text-slate-500 font-medium">
+                            พ่นแล้ว <strong class="text-emerald-700">${completedTotalRai.toLocaleString('th-TH')}</strong> ไร่ • ยอดรวม <strong class="text-emerald-700">฿${completedTotalPrice.toLocaleString('th-TH')}</strong>
+                        </div>
+                    </div>
+
+                    ${compactCompleted.length > 0 ? `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        ${compactCompleted.map(item => buildCompactCompletedCardHTML(item)).join('')}
+                    </div>` : ''}
+
+                    ${expandedCompleted.length > 0 ? `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        ${expandedCompleted.map(item => buildFullCardHTML(item)).join('')}
+                    </div>` : ''}
+                </div>`;
+            }
+
+            listContainer.innerHTML = htmlOutput;
+
+            lucide.createIcons();
+        }
+
+        // ป้องกัน XSS เมื่อแสดงข้อความจากผู้ใช้
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // ==========================================
+        // 3. การจัดการฟอร์มเพิ่ม/แก้ไข (CRUD Operations)
+        // ==========================================
+        function populateCustomerDropdown() {
+            const select = document.getElementById('existingCustomerSelect');
+            if (!select) return;
+
+            // รวมรายการล่าสุดของแต่ละลูกค้า (แยกตามชื่อ + เบอร์โทร + สถานที่)
+            const uniqueJobs = [];
+            const seen = new Set();
+            schedules.forEach(item => {
+                const key = `${item.customerName}|${item.phone}|${item.location}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueJobs.push(item);
+                }
+            });
+
+            select.innerHTML = `<option value="">-- เลือกรายชื่อลูกค้าเดิม (${uniqueJobs.length} แปลง) เพื่อดึงข้อมูลอัตโนมัติ --</option>` +
+                uniqueJobs.map(item => `
+                    <option value="${item.id}">
+                        ${escapeHTML(item.customerName)} • ${escapeHTML(item.cropType)} (${item.areaRai} ไร่) - ${escapeHTML(item.location)}
+                    </option>
+                `).join('');
+        }
+
+        function applyJobDataToForm(item) {
+            const m = computeSprayMetrics(item);
+            document.getElementById('customerName').value = item.customerName;
+            document.getElementById('phone').value = item.phone;
+            document.getElementById('location').value = item.location;
+            document.getElementById('cropType').value = item.cropType;
+            document.getElementById('chemicalType').value = item.chemicalType;
+            document.getElementById('areaRai').value = m.areaRai;
+            document.getElementById('pricePerRai').value = m.pricePerRai;
+            document.getElementById('swathWidth').value = m.swathWidth;
+            document.getElementById('sprayDistance').value = m.sprayDistance;
+            document.getElementById('droneSpeed').value = m.droneSpeed;
+            document.getElementById('flowRate').value = Number(m.flowRate.toFixed(2));
+            document.getElementById('usageRatePerRai').value = Number(m.usageRatePerRai.toFixed(2));
+            document.getElementById('tankCapacity').value = m.tankCapacity;
+            document.getElementById('autoDistanceToggle').checked = false;
+            setCalculationMode(m.calcMode, false);
+            document.getElementById('timeSlot').value = item.timeSlot;
+            document.getElementById('notes').value = item.notes || '';
+        }
+
+        function fillFromExistingCustomer(jobId) {
+            if (!jobId) return;
+            const item = schedules.find(s => s.id === jobId);
+            if (!item) return;
+            applyJobDataToForm(item);
+            calculateAll();
+            showToast(`ดึงข้อมูลแปลงของ "${item.customerName}" เรียบร้อย`);
+        }
+
+        function repeatSchedule(id) {
+            openFormModal(null, id);
+        }
+
+        function openFormModal(id = null, repeatFromId = null) {
+            const modal = document.getElementById('formModal');
+            const form = document.getElementById('scheduleForm');
+            const repeatBox = document.getElementById('repeatCustomerBox');
+            form.reset();
+
+            if (id) {
+                // โหมดแก้ไข
+                const item = schedules.find(s => s.id === id);
+                if (!item) return;
+                repeatBox.classList.add('hidden');
+                document.getElementById('modalTitle').textContent = 'แก้ไขตารางนัดฉีดพ่นยา';
+                document.getElementById('entryId').value = item.id;
+                applyJobDataToForm(item);
+                document.getElementById('appointmentDate').value = item.appointmentDate;
+                document.getElementById('status').value = item.status;
+            } else if (repeatFromId) {
+                // โหมดนัดซ้ำเจ้าเดิม (สร้างรายการใหม่ โดยดึงข้อมูลเดิมมาทั้งหมด)
+                const item = schedules.find(s => s.id === repeatFromId);
+                if (!item) return;
+                repeatBox.classList.remove('hidden');
+                populateCustomerDropdown();
+                document.getElementById('existingCustomerSelect').value = item.id;
+                document.getElementById('modalTitle').textContent = 'นัดซ้ำเจ้าเดิม (สร้างรอบใหม่)';
+                document.getElementById('entryId').value = ''; // ว่างไว้เพื่อบันทึกเป็นรายการใหม่
+                applyJobDataToForm(item);
+                document.getElementById('appointmentDate').value = getTodayStr(0); // ตั้งเป็นวันที่ปัจจุบันให้เลือกใหม่
+                document.getElementById('status').value = 'รอดำเนินการ'; // รีเซ็ตสถานะเป็นรอดำเนินการ
+                showToast(`คัดลอกข้อมูล "${item.customerName}" แล้ว เลือกวันที่นัดรอบใหม่ได้เลย`);
+            } else {
+                // โหมดเพิ่มใหม่ปกติ
+                repeatBox.classList.remove('hidden');
+                populateCustomerDropdown();
+                document.getElementById('modalTitle').textContent = 'เพิ่มตารางนัดฉีดพ่นยา';
+                document.getElementById('entryId').value = '';
+                document.getElementById('appointmentDate').value = getTodayStr(0);
+                document.getElementById('areaRai').value = 10;
+                document.getElementById('pricePerRai').value = 120;
+                document.getElementById('swathWidth').value = 5;
+                document.getElementById('droneSpeed').value = 5.0;
+                document.getElementById('flowRate').value = 3.0;
+                document.getElementById('usageRatePerRai').value = 5.0;
+                document.getElementById('tankCapacity').value = 30;
+                document.getElementById('autoDistanceToggle').checked = true;
+                setCalculationMode('flow', false);
+                onAreaOrSwathChange();
+            }
+
+            calculateAll();
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeFormModal() {
+            document.getElementById('formModal').classList.add('hidden');
+        }
+
+        // สลับโหมดการคำนวณระหว่าง 1. อัตราการไหล (L/min) และ 2. อัตราการใช้งาน (ลิตร/ไร่)
+        function setCalculationMode(mode, shouldRecalculate = true) {
+            const normalizedMode = mode === 'ratePerRai' ? 'ratePerRai' : 'flow';
+            document.getElementById('calcMode').value = normalizedMode;
+
+            const flowBtn = document.getElementById('modeFlowBtn');
+            const rateBtn = document.getElementById('modeRateBtn');
+            const flowGroup = document.getElementById('flowRateInputGroup');
+            const rateGroup = document.getElementById('usageRateInputGroup');
+            const distanceGroup = document.getElementById('distanceInputGroup');
+            const rateRaiGroup = document.getElementById('rateModeRaiInputGroup');
+            const rateRaiInput = document.getElementById('rateModeRai');
+            const areaRaiInput = document.getElementById('areaRai');
+            const secondMetricLabel = document.getElementById('calcSecondMetricLabel');
+
+            if (normalizedMode === 'ratePerRai') {
+                rateBtn.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-emerald-600 text-white shadow-2xs';
+                flowBtn.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-transparent text-sky-800 hover:bg-sky-50';
+                rateGroup.classList.remove('hidden');
+                flowGroup.classList.add('hidden');
+                rateRaiGroup.classList.remove('hidden');
+                distanceGroup.classList.add('hidden');
+                rateRaiInput.value = areaRaiInput.value;
+                secondMetricLabel.textContent = '🚿 อัตราไหลที่ต้องใช้';
+            } else {
+                flowBtn.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-sky-600 text-white shadow-2xs';
+                rateBtn.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-transparent text-sky-800 hover:bg-sky-50';
+                flowGroup.classList.remove('hidden');
+                rateGroup.classList.add('hidden');
+                distanceGroup.classList.remove('hidden');
+                rateRaiGroup.classList.add('hidden');
+                secondMetricLabel.textContent = '🌿 อัตราพ่นเฉลี่ย';
+            }
+
+            if (shouldRecalculate) {
+                calculateAll();
+            }
+        }
+
+        // ซิงก์ค่าไร่เมื่อแก้ไขในช่องไร่ของหัวข้อที่ 2
+        function onRateModeRaiInput(val) {
+            const areaRaiInput = document.getElementById('areaRai');
+            areaRaiInput.value = val;
+            onAreaOrSwathChange();
+        }
+
+        function setUsageRate(val) {
+            document.getElementById('usageRatePerRai').value = val;
+            calculateAll();
+        }
+
+        // ปุ่มลัดตั้งค่าพารามิเตอร์โดรน
+        function setSwath(val) {
+            document.getElementById('swathWidth').value = val;
+            onAreaOrSwathChange();
+        }
+        function setSpeed(val) {
+            document.getElementById('droneSpeed').value = val;
+            calculateAll();
+        }
+        function setFlow(val) {
+            document.getElementById('flowRate').value = val;
+            calculateAll();
+        }
+        function setTank(val) {
+            document.getElementById('tankCapacity').value = val;
+            calculateAll();
+        }
+
+        // คำนวณระยะทางบินพ่นอัตโนมัติเมื่อเปลี่ยนพื้นที่หรือความกว้างแนวพ่น (1 ไร่ = 1,600 ตร.ม.)
+        function onAreaOrSwathChange() {
+            const raiVal = document.getElementById('areaRai').value;
+            const rateRaiInput = document.getElementById('rateModeRai');
+            if (rateRaiInput && document.getElementById('calcMode').value === 'ratePerRai') {
+                rateRaiInput.value = raiVal;
+            }
+            const isAuto = document.getElementById('autoDistanceToggle').checked;
+            if (isAuto) {
+                const rai = parseFloat(raiVal) || 0;
+                const swath = parseFloat(document.getElementById('swathWidth').value) || 5;
+                const estimatedDistance = swath > 0 ? Math.round((rai * 1600) / swath) : 0;
+                document.getElementById('sprayDistance').value = estimatedDistance;
+            }
+            calculateAll();
+        }
+
+        // หากผู้ใช้กรอกระยะทางบินเอง ให้ปลดติ๊กคำนวณอัตโนมัติ
+        function onManualDistanceInput() {
+            document.getElementById('autoDistanceToggle').checked = false;
+            calculateAll();
+        }
+
+        // คำนวณราคาและพารามิเตอร์น้ำฉีดพ่นแบบเรียลไทม์ในฟอร์ม
+        function calculateAll() {
+            const calcMode = document.getElementById('calcMode').value;
+            const tempItem = {
+                calcMode,
+                areaRai: parseFloat(document.getElementById('areaRai').value) || 0,
+                pricePerRai: parseFloat(document.getElementById('pricePerRai').value) || 0,
+                swathWidth: parseFloat(document.getElementById('swathWidth').value) || 5,
+                sprayDistance: parseFloat(document.getElementById('sprayDistance').value) || 0,
+                droneSpeed: parseFloat(document.getElementById('droneSpeed').value) || 0,
+                flowRate: parseFloat(document.getElementById('flowRate').value) || 0,
+                usageRatePerRai: parseFloat(document.getElementById('usageRatePerRai').value) || 0,
+                tankCapacity: parseFloat(document.getElementById('tankCapacity').value) || 1
+            };
+
+            const m = computeSprayMetrics(tempItem);
+
+            document.getElementById('calculatedTotalDisplay').textContent = `฿${m.totalPrice.toLocaleString('th-TH')}`;
+            document.getElementById('calcTotalWater').textContent = `${m.totalWaterLiters.toFixed(1)} ลิตร`;
+            if (calcMode === 'ratePerRai') {
+                document.getElementById('calcWaterPerRai').textContent = `${m.flowRate.toFixed(2)} L/min`;
+            } else {
+                document.getElementById('calcWaterPerRai').textContent = `${m.waterPerRai.toFixed(1)} ลิตร/ไร่`;
+            }
+            document.getElementById('calcTankRounds').innerHTML = `${m.ceilTanks} ถัง <span class="text-[11px] font-normal text-slate-500">(${m.exactTanks.toFixed(2)})</span>`;
+            document.getElementById('calcFlightTime').textContent = `${m.mins} น. ${m.secs} วิ.`;
+        }
+
+        // บันทึกข้อมูลจากฟอร์ม
+        function saveSchedule(event) {
+            event.preventDefault();
+            const id = document.getElementById('entryId').value;
+            const calcMode = document.getElementById('calcMode').value;
+            const previewMetrics = computeSprayMetrics({
+                calcMode,
+                areaRai: parseFloat(document.getElementById('areaRai').value) || 0,
+                pricePerRai: parseFloat(document.getElementById('pricePerRai').value) || 0,
+                swathWidth: parseFloat(document.getElementById('swathWidth').value) || 5,
+                sprayDistance: parseFloat(document.getElementById('sprayDistance').value) || 0,
+                droneSpeed: parseFloat(document.getElementById('droneSpeed').value) || 5.0,
+                flowRate: parseFloat(document.getElementById('flowRate').value) || 3.0,
+                usageRatePerRai: parseFloat(document.getElementById('usageRatePerRai').value) || 5.0,
+                tankCapacity: parseFloat(document.getElementById('tankCapacity').value) || 30
+            });
+            
+            const newEntry = {
+                id: id || 'job-' + Date.now(),
+                calcMode,
+                customerName: document.getElementById('customerName').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                location: document.getElementById('location').value.trim(),
+                cropType: document.getElementById('cropType').value,
+                chemicalType: document.getElementById('chemicalType').value,
+                areaRai: previewMetrics.areaRai,
+                pricePerRai: previewMetrics.pricePerRai,
+                swathWidth: previewMetrics.swathWidth,
+                sprayDistance: previewMetrics.sprayDistance,
+                droneSpeed: previewMetrics.droneSpeed,
+                flowRate: Number(previewMetrics.flowRate.toFixed(2)),
+                usageRatePerRai: Number(previewMetrics.usageRatePerRai.toFixed(2)),
+                tankCapacity: previewMetrics.tankCapacity,
+                appointmentDate: document.getElementById('appointmentDate').value,
+                timeSlot: document.getElementById('timeSlot').value,
+                status: document.getElementById('status').value,
+                notes: document.getElementById('notes').value.trim()
+            };
+
+            if (id) {
+                const index = schedules.findIndex(s => s.id === id);
+                if (index !== -1) schedules[index] = newEntry;
+                showToast('อัปเดตตารางนัดเรียบร้อยแล้ว');
+            } else {
+                schedules.unshift(newEntry);
+                showToast('เพิ่มตารางนัดใหม่เรียบร้อยแล้ว');
+            }
+
+            saveToLocalStorage();
+            closeFormModal();
+            renderAll();
+        }
+
+        // คัดลอกสรุปข้อมูลงานส่งให้ลูกค้า/ทีมงานทาง LINE
+        function copyJobSummary(id) {
+            const item = schedules.find(s => s.id === id);
+            if (!item) return;
+            const m = computeSprayMetrics(item);
+
+            const summaryText = [
+                `🚁 นัดหมายฉีดพ่นยาด้วยโดรน (AgriDrone)`,
+                `👤 ลูกค้า: ${item.customerName} (${item.phone})`,
+                `📅 วันที่: ${item.appointmentDate} | ${item.timeSlot}`,
+                `📍 พิกัด: ${item.location}`,
+                `🌱 พืช: ${item.cropType} | สารพ่น: ${item.chemicalType}`,
+                `📐 พื้นที่: ${m.areaRai} ไร่ (ค่าบริการ ฿${m.totalPrice.toLocaleString('th-TH')})`,
+                `--- ข้อมูลการบินและเตรียมน้ำ ---`,
+                `💧 ปริมาณน้ำรวม: ${m.totalWaterLiters.toFixed(1)} ลิตร (เฉลี่ย ${m.waterPerRai.toFixed(1)} ลิตร/ไร่)`,
+                `🛢️ จำนวนรอบเติมถัง: ${m.ceilTanks} ถัง (ถังละ ${m.tankCapacity} ลิตร)`,
+                `📏 ระยะบินพ่น: ${m.sprayDistance.toLocaleString('th-TH')} ม. | เร็ว ${m.droneSpeed} m/s | อัตราไหล ${m.flowRate} L/min`,
+                `⏱️ เวลาพ่นโดยประมาณ: ${m.mins} นาที ${m.secs} วินาที`,
+                item.notes ? `📝 หมายเหตุ: ${item.notes}` : ''
+            ].filter(Boolean).join('\n');
+
+            const textArea = document.createElement('textarea');
+            textArea.value = summaryText;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('คัดลอกสรุปงานพร้อมส่ง LINE แล้ว!');
+            } catch (err) {
+                showToast('ไม่สามารถคัดลอกข้อความได้');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // สลับสถานะ เสร็จสิ้น / รอดำเนินการ อย่างรวดเร็ว
+        function toggleComplete(id) {
+            const item = schedules.find(s => s.id === id);
+            if (!item) return;
+            
+            if (item.status === 'เสร็จสิ้น') {
+                item.status = 'รอดำเนินการ';
+                expandedCompletedIds.delete(id);
+                showToast('เปลี่ยนสถานะเป็น "รอดำเนินการ"');
+            } else {
+                item.status = 'เสร็จสิ้น';
+                expandedCompletedIds.delete(id); // ย่อเก็บอัตโนมัติเมื่อพ่นเสร็จ
+                showToast('บันทึกงาน "เสร็จสิ้น" และย่อการ์ดเรียบร้อย!');
+            }
+            saveToLocalStorage();
+            renderAll();
+        }
+
+        // สลับย่อ/ขยายการ์ดงานที่เสร็จสิ้นแล้ว
+        function toggleExpandCompleted(id) {
+            if (expandedCompletedIds.has(id)) {
+                expandedCompletedIds.delete(id);
+            } else {
+                expandedCompletedIds.add(id);
+            }
+            renderSchedules();
+        }
+
+        // ==========================================
+        // 4. ระบบยืนยันการลบ & จัดการข้อมูล (Modal Confirm & CSV)
+        // ==========================================
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            pendingConfirmCallback = onConfirm;
+            document.getElementById('confirmModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            pendingConfirmCallback = null;
+        }
+
+        document.getElementById('confirmActionBtn').addEventListener('click', () => {
+            if (pendingConfirmCallback) pendingConfirmCallback();
+            closeConfirmModal();
+        });
+
+        function askDeleteSchedule(id, customerName) {
+            openConfirmModal(
+                'ลบรายการนัดหมาย',
+                `คุณต้องการลบตารางนัดของ "${customerName}" ใช่หรือไม่?`,
+                () => {
+                    schedules = schedules.filter(s => s.id !== id);
+                    saveToLocalStorage();
+                    renderAll();
+                    showToast('ลบรายการนัดหมายแล้ว');
+                }
+            );
+        }
+
+        function askClearAllData() {
+            openConfirmModal(
+                'ล้างข้อมูลทั้งหมด',
+                'รายการนัดหมายทั้งหมดจะถูกลบออกจากเครื่อง คุณแน่ใจหรือไม่?',
+                () => {
+                    schedules = [];
+                    saveToLocalStorage();
+                    renderAll();
+                    showToast('ล้างข้อมูลทั้งหมดเรียบร้อยแล้ว');
+                }
+            );
+        }
+
+        function resetSampleData() {
+            openConfirmModal(
+                'โหลดข้อมูลตัวอย่าง',
+                'ต้องการเพิ่มข้อมูลตัวอย่างภาษาไทย 4 รายการลงในตารางหรือไม่?',
+                () => {
+                    const samples = getDefaultSampleData().map((item, idx) => ({
+                        ...item,
+                        id: 'sample-' + Date.now() + '-' + idx
+                    }));
+                    schedules = [...samples, ...schedules];
+                    saveToLocalStorage();
+                    renderAll();
+                    showToast('โหลดข้อมูลตัวอย่างเรียบร้อยแล้ว');
+                }
+            );
+        }
+
+        // ส่งออกข้อมูลเป็น CSV (รองรับภาษาไทยใน Excel ด้วย UTF-8 BOM)
+        function exportToCSV() {
+            if (schedules.length === 0) {
+                showToast('ไม่มีข้อมูลสำหรับส่งออก');
+                return;
+            }
+
+            const headers = [
+                'วันที่นัดหมาย',
+                'ช่วงเวลา',
+                'ชื่อลูกค้า',
+                'เบอร์โทรศัพท์',
+                'สถานที่/พิกัด',
+                'ชนิดพืช',
+                'ประเภทสาร/ยา',
+                'จำนวนไร่',
+                'ราคาต่อไร่ (บาท)',
+                'ยอดรวม (บาท)',
+                'ความกว้างแนวพ่น (ม.)',
+                'ระยะทางบินพ่น (ม.)',
+                'ความเร็วโดรน (m/s)',
+                'อัตราการไหล (L/min)',
+                'ความจุถัง (ลิตร)',
+                'ปริมาณน้ำรวม (ลิตร)',
+                'อัตราพ่นเฉลี่ย (ลิตร/ไร่)',
+                'จำนวนรอบเติมถัง (ถัง)',
+                'เวลาบินพ่น (นาที)',
+                'สถานะ',
+                'หมายเหตุ'
+            ];
+
+            const rows = schedules.map(item => {
+                const m = computeSprayMetrics(item);
+                return [
+                    item.appointmentDate,
+                    item.timeSlot,
+                    `"${(item.customerName || '').replace(/"/g, '""')}"`,
+                    `"${(item.phone || '').replace(/"/g, '""')}"`,
+                    `"${(item.location || '').replace(/"/g, '""')}"`,
+                    `"${(item.cropType || '').replace(/"/g, '""')}"`,
+                    `"${(item.chemicalType || '').replace(/"/g, '""')}"`,
+                    m.areaRai,
+                    m.pricePerRai,
+                    m.totalPrice,
+                    m.swathWidth,
+                    m.sprayDistance,
+                    m.droneSpeed,
+                    m.flowRate,
+                    m.tankCapacity,
+                    m.totalWaterLiters.toFixed(1),
+                    m.waterPerRai.toFixed(1),
+                    m.ceilTanks,
+                    m.totalMinutes.toFixed(1),
+                    item.status,
+                    `"${(item.notes || '').replace(/"/g, '""')}"`
+                ];
+            });
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `ตารางฉีดยาโดรน_${getTodayStr(0)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast('ดาวน์โหลดไฟล์ CSV เรียบร้อยแล้ว');
+        }
+
+        // แสดงข้อความแจ้งเตือนมุมล่างขวา (Toast)
+        let toastTimeout;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // เริ่มต้นทำงานเมื่อโหลดหน้าเว็บเสร็จ
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
