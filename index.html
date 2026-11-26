@@ -103,26 +103,26 @@
             </div>
 
             <!-- การ์ด 3: พื้นที่รวมทั้งหมด -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3.5">
-                <div class="bg-emerald-50 text-emerald-600 p-3 rounded-xl shrink-0">
-                    <i data-lucide="map" class="w-6 h-6"></i>
+            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+                <div class="bg-emerald-50 text-emerald-600 p-2.5 rounded-xl shrink-0">
+                    <i data-lucide="map" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <p class="text-xs sm:text-sm text-slate-500 font-medium">พื้นที่รวมทั้งหมด</p>
-                    <p id="statTotalRai" class="text-xl sm:text-2xl font-bold text-emerald-600">0 <span class="text-xs font-normal text-slate-400">ไร่</span></p>
+                    <p class="text-[11px] sm:text-xs text-slate-500 font-medium">พื้นที่รวมทั้งหมด</p>
+                    <p id="statTotalRai" class="text-lg sm:text-xl font-bold text-emerald-600">0 <span class="text-[11px] font-normal text-slate-400">ไร่</span></p>
                 </div>
             </div>
 
             <!-- การ์ด 4: ยอดรายรับรวม & รายรับ-รายจ่าย (เลือกเดือนได้) -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between gap-2">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-indigo-100 ring-1 ring-indigo-50 flex flex-col justify-between gap-2.5">
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex items-start gap-2.5 min-w-0">
                         <div class="bg-indigo-50 text-indigo-600 p-2.5 rounded-xl shrink-0">
-                            <i data-lucide="wallet" class="w-5 h-5"></i>
+                            <i data-lucide="wallet" class="w-6 h-6"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-xs sm:text-sm text-slate-500 font-medium">ยอดรายรับสุทธิ</p>
-                            <p id="statTotalRevenue" class="text-xl sm:text-2xl font-bold text-slate-800">฿0</p>
+                            <p class="text-sm sm:text-base text-slate-700 font-bold leading-snug">ยอดรายรับสุทธิ</p>
+                            <p id="statTotalRevenue" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">฿0</p>
                         </div>
                     </div>
                     <button type="button" onclick="openFinanceModal()" 
@@ -1210,14 +1210,14 @@
 
             const totalRevEl = document.getElementById('statTotalRevenue');
             totalRevEl.textContent = `${netTotalRevenue < 0 ? '-' : ''}฿${Math.abs(netTotalRevenue).toLocaleString('th-TH')}`;
-            totalRevEl.className = `text-xl sm:text-2xl font-bold ${netTotalRevenue < 0 ? 'text-rose-600' : 'text-slate-800'}`;
+            totalRevEl.className = `text-2xl sm:text-3xl font-bold tracking-tight ${netTotalRevenue < 0 ? 'text-rose-600' : 'text-slate-900'}`;
 
             document.getElementById('statPeriodIncome').textContent = `฿${periodIncome.toLocaleString('th-TH')}`;
             document.getElementById('statPeriodExpense').textContent = `฿${periodExpense.toLocaleString('th-TH')}`;
 
             const monthlyRevEl = document.getElementById('statMonthlyRevenue');
             monthlyRevEl.textContent = `${periodNet < 0 ? '-' : ''}฿${Math.abs(periodNet).toLocaleString('th-TH')}`;
-            monthlyRevEl.className = `text-xs sm:text-sm font-bold shrink-0 ${periodNet < 0 ? 'text-rose-600' : 'text-indigo-600'}`;
+            monthlyRevEl.className = `text-sm sm:text-base font-bold shrink-0 ${periodNet < 0 ? 'text-rose-600' : 'text-indigo-600'}`;
 
             const modalIncomeEl = document.getElementById('modalTotalIncome');
             if (modalIncomeEl) {
