@@ -17,7 +17,27 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- โหลดไลบรารีสร้าง QR Code (PromptPay / ข้อความ) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
+    <style>
+        /* บังคับเลย์เอาต์แดชบอร์ดเฉพาะหน้าจอมือถือ (กว้างน้อยกว่า 768px) */
+        @media (max-width: 767px) {
+            #mobileDashboardTopGrid {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 0.625rem !important;
+                align-items: stretch !important;
+            }
+            #mobileCombinedWorkCard,
+            #mobilePendingCard {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+            #mobileNetRevenueCard {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+        }
+    </style>
+
     <script>
         tailwind.config = {
             theme: {
@@ -60,7 +80,7 @@
                     <p class="text-xs text-emerald-100">ระบบจัดการตารางบินฉีดพ่นยาการเกษตร</p>
                 </div>
             </div>
-            
+
             <div class="flex items-center gap-2">
                 <button type="button" onclick="exportToCSV()" class="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 text-white text-xs sm:text-sm font-medium px-3 py-2 rounded-xl transition backdrop-blur-sm border border-white/20" title="ดาวน์โหลดข้อมูลเป็นไฟล์ Excel/CSV">
                     <i data-lucide="download" class="w-4 h-4"></i>
@@ -79,11 +99,10 @@
 
         <!-- แดชบอร์ดสรุปภาพรวม (Dashboard Summary) -->
         <section aria-label="สรุปภาพรวม" class="space-y-2.5 sm:space-y-4">
-            <!-- แถวบน: บนมือถือเรียง 2 คอลัมน์ข้างกัน (งานทั้งหมด+พื้นที่รวม | รอดำเนินการ) และบนจอใหญ่กิน 5/12 คอลัมน์ -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-4 items-stretch">
-                <div class="lg:col-span-5 grid grid-cols-2 gap-2.5 sm:gap-3">
+                <div id="mobileDashboardTopGrid" class="lg:col-span-5 grid grid-cols-2 gap-2.5 sm:gap-3">
                     <!-- การ์ดรวม: งานทั้งหมด & พื้นที่รวมทั้งหมด -->
-                    <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between gap-2 min-w-0">
+                    <div id="mobileCombinedWorkCard" class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between gap-2 min-w-0">
                         <div class="flex items-center gap-2 min-w-0">
                             <div class="bg-emerald-50 text-emerald-600 p-2 rounded-xl shrink-0">
                                 <i data-lucide="layers" class="w-4 h-4 sm:w-5 sm:h-5"></i>
@@ -99,8 +118,8 @@
                         </div>
                     </div>
 
-                    <!-- การ์ด 2: งานที่รอดำเนินการ (อยู่ด้านข้างการ์ดงานทั้งหมด+พื้นที่รวมบนมือถือ) -->
-                    <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between gap-2 min-w-0">
+                    <!-- การ์ด: งานที่รอดำเนินการ -->
+                    <div id="mobilePendingCard" class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between gap-2 min-w-0">
                         <div class="flex items-center gap-2 min-w-0">
                             <div class="bg-amber-50 text-amber-600 p-2 rounded-xl shrink-0">
                                 <i data-lucide="calendar-clock" class="w-4 h-4 sm:w-5 sm:h-5"></i>
@@ -116,428 +135,366 @@
                     </div>
                 </div>
 
-                <!-- ยอดรายรับสุทธิขยายเต็มพื้นที่ & รายรับ-รายจ่าย (เลือกเดือนได้) -->
-                <div class="lg:col-span-7 bg-white p-3.5 sm:p-5 rounded-2xl shadow-sm border border-indigo-100 ring-1 ring-indigo-50 flex flex-col justify-between gap-2.5 sm:gap-3 min-w-0">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="bg-indigo-50 text-indigo-600 p-2.5 sm:p-3 rounded-xl shrink-0">
-                            <i data-lucide="wallet" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                <!-- การ์ดยอดรายรับสุทธิ & รายรับ-รายจ่าย -->
+                <div id="mobileNetRevenueCard" class="lg:col-span-7 bg-white p-3.5 sm:p-5 rounded-2xl shadow-sm border border-indigo-100 ring-1 ring-indigo-50 flex flex-col justify-between gap-2.5 sm:gap-3 min-w-0">
+                    <div class="flex flex-wrap items-center justify-between gap-2.5 min-w-0">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="bg-indigo-50 text-indigo-600 p-2.5 sm:p-3 rounded-xl shrink-0">
+                                <i data-lucide="wallet" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs sm:text-sm text-slate-600 font-bold leading-snug">ยอดรายรับสุทธิ</p>
+                                <p id="statTotalRevenue" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight break-all">฿0</p>
+                            </div>
                         </div>
-                        <div class="min-w-0">
-                            <p class="text-xs sm:text-sm text-slate-600 font-bold leading-snug">ยอดรายรับสุทธิ</p>
-                            <p id="statTotalRevenue" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight break-all">฿0</p>
+
+                        <button type="button" onclick="openFinanceModal()"
+                            class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 text-xs font-semibold transition whitespace-nowrap shrink-0"
+                            title="บันทึกและดูรายละเอียดรายรับ-รายจ่ายเพิ่มเติม">
+                            <i data-lucide="plus-minus" class="w-3.5 h-3.5 shrink-0"></i>
+                            <span>รายรับ-รายจ่าย</span>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                        <span class="text-emerald-700 font-semibold">รับรวม: <strong id="statPeriodIncome">฿0</strong></span>
+                        <span class="text-rose-600 font-semibold">จ่ายรวม: <strong id="statPeriodExpense">฿0</strong></span>
+                    </div>
+
+                    <!-- สถานะการรับเงินของงานที่เสร็จสิ้น: จ่ายเงินสด / โอนธนาคาร / ค้าง -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-emerald-50/70 border border-emerald-200/70 rounded-xl p-2 text-center">
+                            <p class="text-[11px] text-emerald-700 font-semibold">จ่ายเงินสด</p>
+                            <p id="statPaymentCash" class="text-xs sm:text-sm font-bold text-emerald-800 mt-0.5">฿0</p>
                         </div>
+                        <div class="bg-sky-50/70 border border-sky-200/70 rounded-xl p-2 text-center">
+                            <p class="text-[11px] text-sky-700 font-semibold">โอนธนาคาร</p>
+                            <p id="statPaymentTransfer" class="text-xs sm:text-sm font-bold text-sky-800 mt-0.5">฿0</p>
+                        </div>
+                        <button type="button" onclick="openUnpaidModal()" class="bg-amber-50 hover:bg-amber-100/80 border border-amber-200 rounded-xl p-2 text-center transition">
+                            <p class="text-[11px] text-amber-800 font-semibold inline-flex items-center justify-center gap-0.5">
+                                <span>ค้าง</span>
+                                <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                            </p>
+                            <p id="statPaymentUnpaid" class="text-xs sm:text-sm font-bold text-amber-700 mt-0.5">฿0</p>
+                        </button>
                     </div>
 
-                    <button type="button" onclick="openFinanceModal()" 
-                        class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 text-xs font-semibold transition whitespace-nowrap shrink-0"
-                        title="บันทึกและดูรายละเอียดรายรับ-รายจ่ายเพิ่มเติม">
-                        <i data-lucide="plus-minus" class="w-3.5 h-3.5 shrink-0"></i>
-                        <span>รายรับ-รายจ่าย</span>
-                    </button>
-                </div>
-
-                <!-- แถบสรุปรายรับ vs รายจ่าย ตามเดือนที่เลือก -->
-                <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
-                    <span class="text-emerald-700 font-medium">รับ: <strong id="statPeriodIncome">฿0</strong></span>
-                    <span class="text-rose-600 font-medium">จ่าย: <strong id="statPeriodExpense">฿0</strong></span>
-                </div>
-
-                <!-- สรุปยอดรับเงิน 3 ช่อง: จ่ายเงินสด / โอนผ่านธนาคาร / ค้าง -->
-                <div class="grid grid-cols-3 gap-1.5 sm:gap-2 text-center bg-slate-50/90 p-1.5 rounded-xl border border-slate-200/80">
-                    <div class="bg-white px-2 py-1.5 rounded-lg border border-emerald-100 min-w-0">
-                        <span class="block text-[10px] sm:text-xs font-semibold text-emerald-700 truncate">จ่ายเงินสด</span>
-                        <span id="statPaymentCash" class="block text-xs sm:text-sm font-bold text-emerald-700 truncate">฿0</span>
+                    <!-- ตัวเลือกเดือนสำหรับดูยอดรายรับรายเดือน -->
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 min-w-0">
+                        <select id="revenueMonthSelect" onchange="updateDashboardStats()"
+                            aria-label="เลือกเดือนเพื่อดูยอดรายรับ"
+                            class="text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer max-w-[62%] truncate">
+                            <option value="all">ทุกเดือน (รวม)</option>
+                        </select>
+                        <span id="statMonthlyRevenue" class="text-sm sm:text-base font-bold text-indigo-600 shrink-0">฿0</span>
                     </div>
-                    <div class="bg-white px-2 py-1.5 rounded-lg border border-sky-100 min-w-0">
-                        <span class="block text-[10px] sm:text-xs font-semibold text-sky-700 truncate">โอนธนาคาร</span>
-                        <span id="statPaymentTransfer" class="block text-xs sm:text-sm font-bold text-sky-700 truncate">฿0</span>
-                    </div>
-                    <button type="button" onclick="openUnpaidModal()" 
-                        class="bg-amber-50/90 hover:bg-amber-100 active:scale-[0.99] px-2 py-1.5 rounded-lg border border-amber-200 text-center transition group min-w-0"
-                        title="คลิกดูรายชื่อลูกค้าที่ค้างชำระและอัปเดตการจ่ายเงิน">
-                        <span class="flex items-center justify-center gap-0.5 text-[10px] sm:text-xs font-semibold text-amber-800 truncate">
-                            <span>ค้าง</span>
-                            <i data-lucide="chevron-right" class="w-3 h-3 text-amber-700 shrink-0 group-hover:translate-x-0.5 transition-transform"></i>
-                        </span>
-                        <span id="statPaymentUnpaid" class="block text-xs sm:text-sm font-bold text-amber-700 truncate">฿0</span>
-                    </button>
-                </div>
-
-                <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <select id="revenueMonthSelect" onchange="updateDashboardStats()" aria-label="เลือกเดือนเพื่อดูยอดรายรับ-รายจ่าย"
-                        class="text-xs font-medium bg-indigo-50/80 text-indigo-800 border border-indigo-200/80 rounded-lg px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[175px] truncate">
-                        <option value="all">ทุกเดือน (รวม)</option>
-                    </select>
-                    <span id="statMonthlyRevenue" class="text-sm sm:text-base font-bold text-indigo-600 shrink-0">฿0</span>
                 </div>
             </div>
         </section>
 
-        <!-- แถบเครื่องมือค้นหาและกรองข้อมูล -->
+        <!-- แถบค้นหาและตัวกรอง (Search & Filter Bar) -->
         <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
-            <div class="flex flex-col md:flex-row gap-3">
-                <!-- ช่องค้นหา -->
-                <div class="relative flex-1">
-                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                    <input type="text" id="searchInput" oninput="renderSchedules()" placeholder="ค้นหาชื่อลูกค้า, เบอร์โทร, สถานที่ หรือชนิดพืช..." 
-                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
-                </div>
-
-                <!-- ตัวกรองสถานะ & เรียงลำดับ -->
-                <div class="flex flex-wrap sm:flex-nowrap gap-2">
-                    <select id="statusFilter" onchange="renderSchedules()" class="flex-1 sm:w-44 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <option value="all">สถานะ: ทั้งหมด</option>
-                        <option value="รอดำเนินการ">รอดำเนินการ</option>
-                        <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
-                        <option value="เสร็จสิ้น">เสร็จสิ้น</option>
-                        <option value="เลื่อนนัด">เลื่อนนัด</option>
-                    </select>
-
-                    <select id="sortOrder" onchange="renderSchedules()" class="flex-1 sm:w-48 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <option value="dateAsc">เรียง: วันที่ใกล้สุดก่อน</option>
-                        <option value="dateDesc">เรียง: วันที่ล่าสุดก่อน</option>
-                        <option value="priceDesc">เรียง: ยอดเงินสูงสุด</option>
-                        <option value="raiDesc">เรียง: จำนวนไร่มากสุด</option>
-                    </select>
-                </div>
+            <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="searchInput" oninput="renderSchedules()"
+                    placeholder="ค้นหาชื่อลูกค้า, เบอร์โทร, สถานที่ หรือชนิดพืช..."
+                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
             </div>
 
-            <!-- ปุ่มจัดการข้อมูลตัวอย่าง -->
-            <div class="flex flex-wrap items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500 gap-2">
-                <span id="resultCountText">แสดงทั้งหมด 0 รายการ</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <select id="statusFilter" onchange="renderSchedules()"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="all">สถานะ: ทั้งหมด</option>
+                    <option value="รอดำเนินการ">รอดำเนินการ</option>
+                    <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+                    <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+                    <option value="เลื่อนนัด">เลื่อนนัด</option>
+                </select>
+
+                <select id="sortOrder" onchange="renderSchedules()"
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="dateAsc">เรียง: วันที่ใกล้สุดก่อน</option>
+                    <option value="dateDesc">เรียง: วันที่ไกลสุดก่อน</option>
+                    <option value="priceDesc">เรียง: ยอดเงินมากไปน้อย</option>
+                    <option value="raiDesc">เรียง: พื้นที่มากไปน้อย</option>
+                </select>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                <span id="resultCountText">แสดงทั้งหมด 0 รายการ (จาก 0 งาน)</span>
                 <div class="flex items-center gap-3">
-                    <button type="button" onclick="resetSampleData()" class="text-sky-600 hover:text-sky-700 hover:underline flex items-center gap-1">
-                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> โหลดข้อมูลตัวอย่างใหม่
+                    <button type="button" onclick="resetSampleData()" class="inline-flex items-center gap-1 text-sky-600 hover:text-sky-700 font-medium">
+                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                        <span>โหลดข้อมูลตัวอย่างใหม่</span>
                     </button>
-                    <button type="button" onclick="askClearAllData()" class="text-rose-500 hover:text-rose-600 hover:underline flex items-center gap-1">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> ล้างข้อมูลทั้งหมด
+                    <button type="button" onclick="askClearAllData()" class="inline-flex items-center gap-1 text-rose-600 hover:text-rose-700 font-medium">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>ล้างข้อมูลทั้งหมด</span>
                     </button>
                 </div>
             </div>
         </section>
 
-        <!-- รายการตารางนัดหมาย (Schedule Cards Grid) -->
-        <section id="scheduleList" class="space-y-6">
-            <!-- รายการจะถูกสร้างด้วย JavaScript -->
-        </section>
+        <!-- รายการตารางนัดหมาย -->
+        <section aria-label="รายการตารางนัดหมาย" class="space-y-4">
+            <div id="scheduleList" class="space-y-4"></div>
 
-        <!-- หน้าจอเมื่อไม่พบข้อมูล -->
-        <div id="emptyState" class="hidden bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center space-y-3">
-            <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                <i data-lucide="calendar-plus" class="w-8 h-8"></i>
-            </div>
-            <h3 class="text-lg font-semibold text-slate-800">ยังไม่มีรายการนัดหมายฉีดพ่นยา</h3>
-            <p class="text-sm text-slate-500 max-w-md mx-auto">เริ่มต้นบันทึกรายการนัดหมายลูกค้า แปลงเกษตร และคำนวณค่าบริการพ่นยาด้วยโดรนได้เลย</p>
-            <div class="pt-2">
-                <button type="button" onclick="openFormModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-5 py-2.5 rounded-xl shadow-sm transition">
-                    <i data-lucide="plus" class="w-4 h-4"></i> เพิ่มนัดหมายแรก
+            <!-- สถานะเมื่อไม่พบข้อมูล -->
+            <div id="emptyState" class="hidden bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center space-y-3">
+                <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                    <i data-lucide="calendar-x" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-700">ไม่พบรายการตารางนัด</h3>
+                <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">ลองเปลี่ยนคำค้นหา ปรับตัวกรองสถานะ หรือกดปุ่มเพิ่มตารางนัดใหม่</p>
+                <button type="button" onclick="openFormModal()" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>เพิ่มตารางนัดใหม่</span>
                 </button>
             </div>
-        </div>
-
+        </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-4 mt-8 text-center text-xs text-slate-400">
-        <p>AgriDrone Scheduler • ข้อมูลถูกบันทึกอัตโนมัติบนเบราว์เซอร์ของคุณ (Local Storage)</p>
-    </footer>
-
     <!-- ========================================== -->
-    <!-- MODAL: ฟอร์มเพิ่ม / แก้ไขตารางนัดฉีดพ่นยา -->
+    <!-- MODAL: เพิ่ม / แก้ไข / นัดซ้ำ ตารางนัด -->
     <!-- ========================================== -->
-    <div id="formModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden my-auto">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 text-white flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="calendar-plus" class="w-5 h-5"></i>
-                    <h2 id="formModalTitle" class="text-base sm:text-lg font-bold">เพิ่มตารางนัดใหม่</h2>
-                </div>
-                <button type="button" onclick="closeFormModal()" class="p-1.5 hover:bg-white/20 rounded-lg transition">
+    <div id="formModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden overflow-y-auto p-3 sm:p-6">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto overflow-hidden my-4">
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-4 flex items-center justify-between">
+                <h2 id="formModalTitle" class="text-base sm:text-lg font-bold">เพิ่มตารางนัดใหม่</h2>
+                <button type="button" onclick="closeFormModal()" class="p-1.5 rounded-lg hover:bg-white/20 transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <!-- Form Body -->
-            <form id="scheduleForm" onsubmit="saveSchedule(event)" novalidate class="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
+            <form id="scheduleForm" onsubmit="saveSchedule(event)" novalidate class="p-4 sm:p-6 space-y-4 max-h-[82vh] overflow-y-auto">
                 <input type="hidden" id="entryId">
-                <input type="hidden" id="calcMode" value="flow">
 
-                <!-- แถบแจ้งเตือนเมื่อกดนัดซ้ำ -->
-                <div id="repeatBanner" class="hidden bg-sky-50 border border-sky-200 text-sky-800 px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2">
+                <div id="repeatBanner" class="hidden bg-sky-50 border border-sky-200 text-sky-800 px-3.5 py-2.5 rounded-xl text-xs font-medium flex items-center gap-2">
                     <i data-lucide="repeat" class="w-4 h-4 text-sky-600 shrink-0"></i>
-                    <span>กำลังสร้าง <strong>นัดซ้ำเจ้าเดิม</strong> ระบบดึงข้อมูลลูกค้า พิกัดแปลง และตั้งค่าโดรนมาให้แล้ว กรุณาตรวจสอบวันที่นัดหมาย</span>
+                    <span>กำลังสร้างนัดหมายซ้ำจากข้อมูลลูกค้าเดิม สามารถแก้ไขวันที่หรือรายละเอียดก่อนบันทึกได้ครับ</span>
                 </div>
 
-                <!-- 1. ข้อมูลลูกค้าและสถานที่ -->
-                <div class="space-y-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
-                        <i data-lucide="user" class="w-3.5 h-3.5"></i> ข้อมูลเกษตรกร & แปลงเกษตร
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อลูกค้า / เกษตรกร <span class="text-rose-500">*</span></label>
-                            <input type="text" id="customerName" placeholder="เช่น ลุงสมชาย ใจดี" 
-                                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">เบอร์โทรศัพท์ <span class="text-rose-500">*</span></label>
-                            <input type="tel" id="phone" placeholder="เช่น 081-234-5678" 
-                                class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
-                        </div>
+                <!-- ข้อมูลลูกค้าและสถานที่ -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label for="customerName" class="block text-xs font-semibold text-slate-700 mb-1">ชื่อลูกค้า / เกษตรกร *</label>
+                        <input type="text" id="customerName" required placeholder="เช่น ลุงสมชาย ใจดี"
+                            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">สถานที่ / ตำบล / พิกัดแปลง <span class="text-rose-500">*</span></label>
-                        <input type="text" id="location" placeholder="เช่น บ้านหนองนา ต.ดอนเจดีย์ (ติดคลองชลประทาน)" 
-                            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ชนิดพืช</label>
-                            <select id="cropType" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                <option value="นาข้าว">🌾 นาข้าว</option>
-                                <option value="อ้อย">🎋 อ้อย</option>
-                                <option value="มันสำปะหลัง">🌱 มันสำปะหลัง</option>
-                                <option value="ข้าวโพด">🌽 ข้าวโพด</option>
-                                <option value="ทุเรียน / ไม้ผล">🌳 ทุเรียน / ไม้ผล</option>
-                                <option value="ปาล์มน้ำมัน">🌴 ปาล์มน้ำมัน</option>
-                                <option value="พืชไร่อื่นๆ">🌿 พืชไร่อื่นๆ</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ประเภทสาร / ยาที่พ่น</label>
-                            <select id="chemicalType" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                <option value="ฮอร์โมน / ปุ๋ยน้ำ">🧪 ฮอร์โมน / ปุ๋ยน้ำ</option>
-                                <option value="ยาฆ่าแมลง / หนอน">🐛 ยาฆ่าแมลง / หนอน</option>
-                                <option value="ยาคุม-ฆ่าหญ้า">🌾 ยาคุม-ฆ่าหญ้า</option>
-                                <option value="ยาป้องกันเชื้อรา">🍄 ยาป้องกันเชื้อรา</option>
-                                <option value="หว่านปุ๋ยเม็ด / เมล็ด">⚪ หว่านปุ๋ยเม็ด / เมล็ด</option>
-                            </select>
-                        </div>
+                        <label for="phone" class="block text-xs font-semibold text-slate-700 mb-1">เบอร์โทรศัพท์ *</label>
+                        <input type="tel" id="phone" required placeholder="เช่น 081-234-5678"
+                            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                 </div>
 
-                <!-- 2. พื้นที่และค่าบริการ -->
-                <div class="bg-emerald-50/60 p-3.5 rounded-xl border border-emerald-100 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-                            <i data-lucide="calculator" class="w-3.5 h-3.5"></i> พื้นที่ & ค่าบริการ
-                        </h3>
-                        <span class="text-xs font-semibold text-emerald-700">ยอดรวม: <strong id="calculatedTotalDisplay" class="text-base text-emerald-700">฿0</strong></span>
+                <div>
+                    <label for="location" class="block text-xs font-semibold text-slate-700 mb-1">สถานที่ / พิกัดแปลง *</label>
+                    <input type="text" id="location" required placeholder="เช่น บ้านหนองนา ต.ดอนเจดีย์"
+                        class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label for="cropType" class="block text-xs font-semibold text-slate-700 mb-1">ชนิดพืช</label>
+                        <input type="text" id="cropType" value="นาข้าว"
+                            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">จำนวนพื้นที่ (ไร่)</label>
-                            <input type="number" id="areaRai" step="any" min="0.1" value="20" oninput="onAreaOrSwathChange()" 
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ค่าบริการต่อไร่ (บาท)</label>
-                            <input type="number" id="pricePerRai" step="any" min="0" value="100" oninput="calculateAll()" 
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        </div>
+                    <div>
+                        <label for="chemicalType" class="block text-xs font-semibold text-slate-700 mb-1">ประเภทสาร / ยา / ปุ๋ย</label>
+                        <input type="text" id="chemicalType" value="ฮอร์โมน / ปุ๋ยน้ำ"
+                            class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                 </div>
 
-                <!-- 3. ตั้งค่าการบินโดรน & คำนวณปริมาณน้ำ -->
-                <div class="bg-sky-50/70 p-3.5 rounded-xl border border-sky-100 space-y-3">
+                <!-- วันเวลาและสถานะ -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div>
+                        <label for="appointmentDate" class="block text-xs font-semibold text-slate-700 mb-1">วันที่นัดหมาย *</label>
+                        <input type="date" id="appointmentDate" required
+                            class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label for="timeSlot" class="block text-xs font-semibold text-slate-700 mb-1">ช่วงเวลา</label>
+                        <select id="timeSlot" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="ช่วงเช้า (06:00 - 10:00)">ช่วงเช้า (06:00 - 10:00)</option>
+                            <option value="ช่วงสาย (10:00 - 12:00)">ช่วงสาย (10:00 - 12:00)</option>
+                            <option value="ช่วงบ่าย (13:00 - 16:00)">ช่วงบ่าย (13:00 - 16:00)</option>
+                            <option value="ช่วงเย็น (16:00 - 18:30)">ช่วงเย็น (16:00 - 18:30)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="status" class="block text-xs font-semibold text-slate-700 mb-1">สถานะงาน</label>
+                        <select id="status" onchange="onFormStatusChange()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="รอดำเนินการ">รอดำเนินการ</option>
+                            <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+                            <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+                            <option value="เลื่อนนัด">เลื่อนนัด</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- ช่องเลือกการรับเงินเมื่อสถานะเป็น เสร็จสิ้น -->
+                <div id="formPaymentMethodBox" class="hidden bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 space-y-2">
+                    <p class="text-xs font-bold text-emerald-800">สถานะการรับเงินของงานที่เสร็จสิ้น</p>
+                    <div class="grid grid-cols-3 gap-2 text-xs font-semibold">
+                        <label class="flex items-center justify-center gap-1.5 bg-white border border-emerald-200 rounded-lg py-2 px-2 cursor-pointer">
+                            <input type="radio" name="formPaymentMethod" value="cash" class="accent-emerald-600">
+                            <span>จ่ายเงินสด</span>
+                        </label>
+                        <label class="flex items-center justify-center gap-1.5 bg-white border border-sky-200 rounded-lg py-2 px-2 cursor-pointer">
+                            <input type="radio" name="formPaymentMethod" value="transfer" class="accent-sky-600">
+                            <span>โอนธนาคาร</span>
+                        </label>
+                        <label class="flex items-center justify-center gap-1.5 bg-white border border-amber-200 rounded-lg py-2 px-2 cursor-pointer">
+                            <input type="radio" name="formPaymentMethod" value="unpaid" checked class="accent-amber-600">
+                            <span>ค้าง</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- พื้นที่และราคาค่าบริการ -->
+                <div class="grid grid-cols-2 gap-3.5 bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-100">
+                    <div>
+                        <label for="areaRai" class="block text-xs font-semibold text-slate-700 mb-1">จำนวนพื้นที่ (ไร่)</label>
+                        <input type="number" id="areaRai" min="0" step="any" value="20" oninput="onAreaOrSwathChange()"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label for="pricePerRai" class="block text-xs font-semibold text-slate-700 mb-1">ราคาต่อไร่ (บาท)</label>
+                        <input type="number" id="pricePerRai" min="0" step="any" value="100" oninput="calculateAll()"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="col-span-2 flex items-center justify-between pt-1 border-t border-emerald-200/70">
+                        <span class="text-xs font-semibold text-slate-600">ยอดค่าบริการรวมโดยประมาณ</span>
+                        <span id="calculatedTotalDisplay" class="text-lg font-bold text-emerald-700">฿2,000</span>
+                    </div>
+                </div>
+
+                <!-- กล่องคำนวณปริมาณน้ำและรอบบินโดรน -->
+                <div class="bg-sky-50/60 p-3.5 rounded-xl border border-sky-100 space-y-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-sky-800 flex items-center gap-1.5">
-                            <i data-lucide="droplets" class="w-3.5 h-3.5"></i> คำนวณการบิน & ปริมาณน้ำยา
-                        </h3>
-                        <!-- สลับโหมดคำนวณ -->
-                        <div class="inline-flex bg-white p-1 rounded-xl border border-sky-200">
-                            <button type="button" id="modeFlowBtn" onclick="setCalculationMode('flow')" class="py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-sky-600 text-white shadow-2xs">
-                                1. อัตราไหล (L/min)
+                        <span class="text-xs font-bold text-sky-900">โหมดคำนวณปริมาณน้ำยา</span>
+                        <input type="hidden" id="calcMode" value="flow">
+                        <div class="grid grid-cols-2 gap-1 bg-sky-100/80 p-1 rounded-xl">
+                            <button type="button" id="modeFlowBtn" onclick="setCalculationMode('flow')" class="py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-sky-600 text-white">
+                                อัตราไหล (L/min)
                             </button>
-                            <button type="button" id="modeRateBtn" onclick="setCalculationMode('ratePerRai')" class="py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-transparent text-sky-800 hover:bg-sky-50">
-                                2. อัตราพ่น (ลิตร/ไร่)
+                            <button type="button" id="modeRateBtn" onclick="setCalculationMode('ratePerRai')" class="py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-transparent text-sky-800 hover:bg-sky-50">
+                                ลิตรต่อไร่
                             </button>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                        <!-- ความกว้างแนวพ่น -->
+                    <div id="flowRateInputGroup" class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label for="flowRate" class="text-xs font-semibold text-slate-700">อัตราการไหล (ลิตร/นาที)</label>
+                            <div class="flex gap-1">
+                                <button type="button" onclick="setFlow(3.2)" class="px-2 py-0.5 text-[11px] bg-white border border-sky-200 rounded-md hover:bg-sky-100">3.2</button>
+                                <button type="button" onclick="setFlow(3.6)" class="px-2 py-0.5 text-[11px] bg-white border border-sky-200 rounded-md hover:bg-sky-100">3.6</button>
+                                <button type="button" onclick="setFlow(4.5)" class="px-2 py-0.5 text-[11px] bg-white border border-sky-200 rounded-md hover:bg-sky-100">4.5</button>
+                            </div>
+                        </div>
+                        <input type="number" id="flowRate" min="0" step="any" value="3.6" oninput="calculateAll()"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+
+                    <div id="usageRateInputGroup" class="hidden space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label for="usageRatePerRai" class="text-xs font-semibold text-slate-700">อัตราการใช้น้ำ (ลิตร/ไร่)</label>
+                            <div class="flex gap-1">
+                                <button type="button" onclick="setUsageRate(4)" class="px-2 py-0.5 text-[11px] bg-white border border-emerald-200 rounded-md hover:bg-emerald-100">4 ล.</button>
+                                <button type="button" onclick="setUsageRate(5)" class="px-2 py-0.5 text-[11px] bg-white border border-emerald-200 rounded-md hover:bg-emerald-100">5 ล.</button>
+                                <button type="button" onclick="setUsageRate(7)" class="px-2 py-0.5 text-[11px] bg-white border border-emerald-200 rounded-md hover:bg-emerald-100">7 ล.</button>
+                            </div>
+                        </div>
+                        <input type="number" id="usageRatePerRai" min="0" step="any" value="4" oninput="calculateAll()"
+                            class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">ความกว้างแนวพ่น (ม.)</label>
-                            <input type="number" id="swathWidth" step="any" min="1" value="5" oninput="onAreaOrSwathChange()" 
-                                class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <label for="swathWidth" class="block text-[11px] font-semibold text-slate-600 mb-1">ความกว้างพ่น (ม.)</label>
+                            <input type="number" id="swathWidth" min="0.5" step="any" value="5" oninput="onAreaOrSwathChange()"
+                                class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
                             <div class="flex gap-1 mt-1">
-                                <button type="button" onclick="setSwath(4)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">4ม.</button>
-                                <button type="button" onclick="setSwath(5)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">5ม.</button>
-                                <button type="button" onclick="setSwath(6)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">6ม.</button>
-                                <button type="button" onclick="setSwath(7)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">7ม.</button>
+                                <button type="button" onclick="setSwath(4)" class="flex-1 py-0.5 text-[10px] bg-white border rounded hover:bg-slate-100">4ม.</button>
+                                <button type="button" onclick="setSwath(5)" class="flex-1 py-0.5 text-[10px] bg-white border rounded hover:bg-slate-100">5ม.</button>
+                                <button type="button" onclick="setSwath(6)" class="flex-1 py-0.5 text-[10px] bg-white border rounded hover:bg-slate-100">6ม.</button>
                             </div>
                         </div>
-
-                        <!-- ความเร็วโดรน -->
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">ความเร็วโดรน (m/s)</label>
-                            <input type="number" id="droneSpeed" step="any" min="0.5" value="5" oninput="calculateAll()" 
-                                class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <label for="droneSpeed" class="block text-[11px] font-semibold text-slate-600 mb-1">ความเร็ว (m/s)</label>
+                            <input type="number" id="droneSpeed" min="0.1" step="any" value="5" oninput="calculateAll()"
+                                class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
                             <div class="flex gap-1 mt-1">
-                                <button type="button" onclick="setSpeed(4)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">4</button>
-                                <button type="button" onclick="setSpeed(5)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">5</button>
-                                <button type="button" onclick="setSpeed(6)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">6</button>
-                                <button type="button" onclick="setSpeed(7)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">7</button>
+                                <button type="button" onclick="setSpeed(4)" class="flex-1 py-0.5 text-[10px] bg-white border rounded hover:bg-slate-100">4</button>
+                                <button type="button" onclick="setSpeed(5)" class="flex-1 py-0.5 text-[10px] bg-white border rounded hover:bg-slate-100">5</button>
+                                <button type="button" onclick="setSpeed(6)" class="flex-1 py-0.5 text-[10px] bg-white border rounded hover:bg-slate-100">6</button>
                             </div>
                         </div>
-
-                        <!-- โหมด 1: อัตราการไหล (L/min) -->
-                        <div id="flowRateInputGroup">
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">อัตราการไหล (L/min)</label>
-                            <input type="number" id="flowRate" step="any" min="0.1" value="3.6" oninput="calculateAll()" 
-                                class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
-                            <div class="flex gap-1 mt-1">
-                                <button type="button" onclick="setFlow(2.4)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">2.4</button>
-                                <button type="button" onclick="setFlow(3.6)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">3.6</button>
-                                <button type="button" onclick="setFlow(4.8)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">4.8</button>
-                                <button type="button" onclick="setFlow(6.0)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">6.0</button>
-                            </div>
-                        </div>
-
-                        <!-- โหมด 2: อัตราการใช้งาน (ลิตร/ไร่) -->
-                        <div id="usageRateInputGroup" class="hidden">
-                            <label class="block text-[11px] font-semibold text-emerald-800 mb-1">อัตราพ่น (ลิตร/ไร่)</label>
-                            <input type="number" id="usageRatePerRai" step="any" min="0.5" value="4" oninput="calculateAll()" 
-                                class="w-full px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            <div class="flex gap-1 mt-1">
-                                <button type="button" onclick="setUsageRate(3)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-emerald-100">3ล.</button>
-                                <button type="button" onclick="setUsageRate(4)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-emerald-100">4ล.</button>
-                                <button type="button" onclick="setUsageRate(5)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-emerald-100">5ล.</button>
-                                <button type="button" onclick="setUsageRate(6)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-emerald-100">6ล.</button>
-                            </div>
-                        </div>
-
-                        <!-- ความจุถังน้ำยา -->
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">ความจุถังโดรน (ลิตร)</label>
-                            <input type="number" id="tankCapacity" step="any" min="5" value="30" oninput="calculateAll()" 
-                                class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <label for="tankCapacity" class="block text-[11px] font-semibold text-slate-600 mb-1">ความจุถัง (ลิตร)</label>
+                            <input type="number" id="tankCapacity" min="1" step="any" value="30" oninput="calculateAll()"
+                                class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
                             <div class="flex gap-1 mt-1">
-                                <button type="button" onclick="setTank(16)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">16ล.</button>
-                                <button type="button" onclick="setTank(20)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">20ล.</button>
-                                <button type="button" onclick="setTank(30)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">30ล.</button>
-                                <button type="button" onclick="setTank(40)" class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded hover:bg-sky-100">40ล.</button>
+                                <button type="button" onclick="setTank(20)" class="flex-1 py-0.5 text-[10px] bg-white border rounded hover:bg-slate-100">20L</button>
+                                <button type="button" onclick="setTank(30)" class="flex-1 py-0.5 text-[10px] bg-white border rounded hover:bg-slate-100">30L</button>
+                                <button type="button" onclick="setTank(40)" class="flex-1 py-0.5 text-[10px] bg-white border rounded hover:bg-slate-100">40L</button>
                             </div>
                         </div>
-
-                        <!-- ระยะทางบินพ่น (โหมด 1) -->
-                        <div id="distanceInputGroup" class="col-span-2 sm:col-span-2">
+                        <div id="distanceInputGroup">
                             <div class="flex items-center justify-between mb-1">
-                                <label class="text-[11px] font-semibold text-slate-700">ระยะทางบินพ่นรวม (เมตร)</label>
+                                <label for="sprayDistance" class="text-[11px] font-semibold text-slate-600">ระยะบิน (ม.)</label>
                                 <label class="inline-flex items-center gap-1 text-[10px] text-sky-700 cursor-pointer">
-                                    <input type="checkbox" id="autoDistanceToggle" checked onchange="onAreaOrSwathChange()" class="rounded text-sky-600">
-                                    <span>คำนวณจากพื้นที่อัตโนมัติ</span>
+                                    <input type="checkbox" id="autoDistanceToggle" checked onchange="onAreaOrSwathChange()" class="rounded">
+                                    <span>ออโต้</span>
                                 </label>
                             </div>
-                            <input type="number" id="sprayDistance" step="any" min="0" value="6400" oninput="onManualDistanceInput()" 
-                                class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <input type="number" id="sprayDistance" min="0" step="any" value="6400" oninput="onManualDistanceInput()"
+                                class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
                         </div>
-
-                        <!-- ยืนยันพื้นที่ไร่ (โหมด 2) -->
-                        <div id="rateModeRaiInputGroup" class="hidden col-span-2 sm:col-span-2">
-                            <label class="block text-[11px] font-semibold text-emerald-800 mb-1">พื้นที่ฉีดพ่น (ไร่) - ซิงก์กับช่องด้านบน</label>
-                            <input type="number" id="rateModeRai" step="any" min="0.1" value="20" oninput="onRateModeRaiInput(this.value)" 
-                                class="w-full px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <div id="rateModeRaiInputGroup" class="hidden">
+                            <label for="rateModeRai" class="block text-[11px] font-semibold text-slate-600 mb-1">ไร่ที่คำนวณ</label>
+                            <input type="number" id="rateModeRai" min="0" step="any" value="20" oninput="onRateModeRaiInput(this.value)"
+                                class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
                         </div>
                     </div>
 
-                    <!-- กล่องแสดงผลลัพธ์การคำนวณ -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-sky-200/70 text-center">
-                        <div class="bg-white p-2 rounded-lg border border-sky-100">
-                            <span class="block text-[10px] text-slate-500">💧 ปริมาณน้ำรวม</span>
-                            <span id="calcTotalWater" class="text-xs sm:text-sm font-bold text-sky-700">0.0 ลิตร</span>
+                    <!-- ผลลัพธ์การคำนวณ -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white p-2.5 rounded-xl border border-sky-200/80 text-center">
+                        <div>
+                            <span class="block text-[10px] text-slate-500">💧 น้ำยารวม</span>
+                            <span id="calcTotalWater" class="text-xs font-bold text-sky-700">0.0 ลิตร</span>
                         </div>
-                        <div class="bg-white p-2 rounded-lg border border-sky-100">
+                        <div>
                             <span id="calcSecondMetricLabel" class="block text-[10px] text-slate-500">🌿 อัตราพ่นเฉลี่ย</span>
-                            <span id="calcWaterPerRai" class="text-xs sm:text-sm font-bold text-emerald-700">0.0 ลิตร/ไร่</span>
+                            <span id="calcWaterPerRai" class="text-xs font-bold text-emerald-700">0.0 ลิตร/ไร่</span>
                         </div>
-                        <div class="bg-white p-2 rounded-lg border border-sky-100">
-                            <span class="block text-[10px] text-slate-500">🛢️ รอบเติมถัง</span>
-                            <span id="calcTankRounds" class="text-xs sm:text-sm font-bold text-indigo-700">0 ถัง</span>
+                        <div>
+                            <span class="block text-[10px] text-slate-500">🛢️ จำนวนถัง</span>
+                            <span id="calcTankRounds" class="text-xs font-bold text-indigo-700">0 ถัง</span>
                         </div>
-                        <div class="bg-white p-2 rounded-lg border border-sky-100">
+                        <div>
                             <span class="block text-[10px] text-slate-500">⏱️ เวลาบินพ่น</span>
-                            <span id="calcFlightTime" class="text-xs sm:text-sm font-bold text-amber-700">0 น. 0 วิ.</span>
+                            <span id="calcFlightTime" class="text-xs font-bold text-amber-700">0 น. 0 วิ.</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- 4. วันเวลานัดหมายและสถานะ -->
-                <div class="space-y-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                        <i data-lucide="clock" class="w-3.5 h-3.5"></i> วันเวลานัดหมาย & สถานะงาน
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่นัดหมาย <span class="text-rose-500">*</span></label>
-                            <input type="date" id="appointmentDate" 
-                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ช่วงเวลา</label>
-                            <select id="timeSlot" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                <option value="ช่วงเช้า (06:00 - 10:00)">🌅 ช่วงเช้า (06:00 - 10:00)</option>
-                                <option value="ช่วงสาย (10:00 - 12:00)">☀️ ช่วงสาย (10:00 - 12:00)</option>
-                                <option value="ช่วงบ่าย (13:00 - 16:00)">🌤️ ช่วงบ่าย (13:00 - 16:00)</option>
-                                <option value="ช่วงเย็น (16:00 - 18:30)">🌇 ช่วงเย็น (16:00 - 18:30)</option>
-                                <option value="ทั้งวัน">📅 ทั้งวัน</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">สถานะงาน</label>
-                            <select id="status" onchange="onFormStatusChange()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                <option value="รอดำเนินการ">รอดำเนินการ</option>
-                                <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
-                                <option value="เสร็จสิ้น">เสร็จสิ้น</option>
-                                <option value="เลื่อนนัด">เลื่อนนัด</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- เลือกช่องทางการรับเงินเมื่อสถานะเป็น เสร็จสิ้น -->
-                    <div id="formPaymentMethodBox" class="hidden bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 space-y-2">
-                        <label class="block text-xs font-bold text-emerald-900">
-                            การรับเงิน (สำหรับงานที่เสร็จสิ้น) <span class="text-rose-500">*</span>
-                        </label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="formPaymentMethod" value="cash" class="peer sr-only">
-                                <div class="py-2 px-2 rounded-xl border border-slate-200 bg-white text-center text-xs font-semibold text-slate-700 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 transition">
-                                    จ่ายเงินสด
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="formPaymentMethod" value="transfer" class="peer sr-only">
-                                <div class="py-2 px-2 rounded-xl border border-slate-200 bg-white text-center text-xs font-semibold text-slate-700 peer-checked:bg-sky-600 peer-checked:text-white peer-checked:border-sky-600 transition">
-                                    โอนผ่านธนาคาร
-                                </div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="formPaymentMethod" value="unpaid" checked class="peer sr-only">
-                                <div class="py-2 px-2 rounded-xl border border-slate-200 bg-white text-center text-xs font-semibold text-slate-700 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 transition">
-                                    ค้าง
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุเพิ่มเติม (จุดจอดรถ, สิ่งกีดขวาง, สูตรยา)</label>
-                        <textarea id="notes" rows="2" placeholder="เช่น ระวังสายไฟฟ้าแรงสูงฝั่งทิศเหนือ, เกษตรกรเตรียมน้ำไว้ให้แล้ว" 
-                            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"></textarea>
-                    </div>
+                <div>
+                    <label for="notes" class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุเพิ่มเติม</label>
+                    <textarea id="notes" rows="2" placeholder="เช่น จุดเติมน้ำอยู่ริมคลอง มีสายไฟด้านทิศเหนือ"
+                        class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
                 </div>
 
-                <!-- ปุ่มบันทึก / ยกเลิก -->
-                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                    <button type="button" onclick="closeFormModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeFormModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
                         ยกเลิก
                     </button>
-                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm flex items-center gap-1.5 transition">
-                        <i data-lucide="save" class="w-4 h-4"></i>
-                        <span>บันทึกตารางนัด</span>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition">
+                        บันทึกตารางนัด
                     </button>
                 </div>
             </form>
@@ -547,245 +504,224 @@
     <!-- ========================================== -->
     <!-- MODAL: จัดการรายรับ-รายจ่ายเพิ่มเติม -->
     <!-- ========================================== -->
-    <div id="financeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden my-auto">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-indigo-600 to-sky-600 px-5 py-4 text-white flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="plus-minus" class="w-5 h-5"></i>
-                    <div>
-                        <h2 class="text-base sm:text-lg font-bold leading-tight">บันทึกรายรับ - รายจ่าย</h2>
-                        <p class="text-[11px] text-indigo-100">ระบบจะนำไปบวกลบกับยอดรายรับรวมและรายเดือนให้อัตโนมัติ</p>
-                    </div>
+    <div id="financeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden overflow-y-auto p-3 sm:p-6">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full mx-auto overflow-hidden my-4">
+            <div class="bg-gradient-to-r from-indigo-600 to-sky-600 text-white px-5 py-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold">รายรับ-รายจ่ายเพิ่มเติม</h2>
+                    <p class="text-xs text-indigo-100">บันทึกค่าใช้จ่ายหรือรายรับเสริมเพื่อหักลบกับยอดรวม</p>
                 </div>
-                <button type="button" onclick="closeFinanceModal()" class="p-1.5 hover:bg-white/20 rounded-lg transition">
+                <button type="button" onclick="closeFinanceModal()" class="p-1.5 rounded-lg hover:bg-white/20 transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <div class="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
-                <!-- สรุปยอดรวมทั้งหมด -->
+            <div class="p-4 sm:p-5 space-y-4 max-h-[82vh] overflow-y-auto">
                 <div class="grid grid-cols-3 gap-2 text-center bg-slate-50 p-3 rounded-xl border border-slate-200/80">
                     <div>
-                        <span class="block text-[11px] text-slate-500">รายรับรวมทั้งหมด</span>
-                        <span id="modalTotalIncome" class="text-sm sm:text-base font-bold text-emerald-600">฿0</span>
+                        <span class="block text-[11px] text-slate-500">รายรับรวม</span>
+                        <span id="modalTotalIncome" class="text-sm font-bold text-emerald-600">฿0</span>
                     </div>
                     <div class="border-x border-slate-200">
-                        <span class="block text-[11px] text-slate-500">รายจ่ายรวมทั้งหมด</span>
-                        <span id="modalTotalExpense" class="text-sm sm:text-base font-bold text-rose-600">฿0</span>
+                        <span class="block text-[11px] text-slate-500">รายจ่ายรวม</span>
+                        <span id="modalTotalExpense" class="text-sm font-bold text-rose-600">฿0</span>
                     </div>
                     <div>
-                        <span class="block text-[11px] text-slate-500">ยอดสุทธิคงเหลือ</span>
-                        <span id="modalNetBalance" class="text-sm sm:text-base font-bold text-indigo-700">฿0</span>
+                        <span class="block text-[11px] text-slate-500">ยอดสุทธิ</span>
+                        <span id="modalNetBalance" class="text-sm font-bold text-indigo-700">฿0</span>
                     </div>
                 </div>
 
-                <!-- ฟอร์มบันทึกรายรับ-รายจ่าย -->
-                <form id="financeForm" onsubmit="saveFinanceRecord(event)" novalidate class="space-y-3 bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/70">
+                <form id="financeForm" onsubmit="saveFinanceRecord(event)" class="space-y-3 bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/70">
                     <div class="grid grid-cols-2 gap-2">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="financeType" value="expense" checked class="peer sr-only">
-                            <div class="py-2 px-3 rounded-xl border border-slate-200 bg-white text-center text-xs sm:text-sm font-bold text-slate-700 peer-checked:bg-rose-600 peer-checked:text-white peer-checked:border-rose-600 transition">
-                                - รายจ่าย (หักออก)
-                            </div>
+                        <label class="flex items-center justify-center gap-2 bg-white border border-rose-200 rounded-xl py-2 px-3 text-xs font-bold text-rose-700 cursor-pointer">
+                            <input type="radio" name="financeType" value="expense" checked class="accent-rose-600">
+                            <span>รายจ่าย (หักออก)</span>
                         </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="financeType" value="income" class="peer sr-only">
-                            <div class="py-2 px-3 rounded-xl border border-slate-200 bg-white text-center text-xs sm:text-sm font-bold text-slate-700 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 transition">
-                                + รายรับเพิ่ม (บวกเข้า)
-                            </div>
+                        <label class="flex items-center justify-center gap-2 bg-white border border-emerald-200 rounded-xl py-2 px-3 text-xs font-bold text-emerald-700 cursor-pointer">
+                            <input type="radio" name="financeType" value="income" class="accent-emerald-600">
+                            <span>รายรับเสริม (บวกเพิ่ม)</span>
                         </label>
+                    </div>
+
+                    <!-- ปุ่มเลือกด่วนสำหรับรายการรายจ่าย -->
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <span class="text-[11px] text-slate-500 font-medium">เลือกด่วน:</span>
+                        <button type="button" onclick="selectFinancePreset('ค่าน้ำมันรถ')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition">
+                            ค่าน้ำมันรถ
+                        </button>
+                        <button type="button" onclick="selectFinancePreset('ค่าน้ำมันเครื่องปั่นไฟ')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition">
+                            ค่าน้ำมันเครื่องปั่นไฟ
+                        </button>
+                        <button type="button" onclick="selectFinancePreset('ค่าแรง')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition">
+                            ค่าแรง
+                        </button>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                         <div class="sm:col-span-2">
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">รายการ / รายละเอียด <span class="text-rose-500">*</span></label>
-                            <input type="text" id="financeTitle" placeholder="เช่น ค่าน้ำมันรถ, ค่าน้ำมันเครื่องปั่นไฟ, ค่าแรง หรือพิมพ์เอง..." 
+                            <label for="financeTitle" class="block text-xs font-semibold text-slate-700 mb-1">รายการ / รายละเอียด *</label>
+                            <input type="text" id="financeTitle" list="expensePresetList" placeholder="เช่น ค่าน้ำมันรถ, ค่าน้ำมันเครื่องปั่นไฟ, ค่าแรง หรือพิมพ์เอง"
                                 class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <div class="flex flex-wrap gap-1.5 mt-1.5">
-                                <button type="button" onclick="selectFinancePreset('ค่าน้ำมันรถ')" class="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/80 transition">
-                                    1. ค่าน้ำมันรถ
-                                </button>
-                                <button type="button" onclick="selectFinancePreset('ค่าน้ำมันเครื่องปั่นไฟ')" class="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/80 transition">
-                                    2. ค่าน้ำมันเครื่องปั่นไฟ
-                                </button>
-                                <button type="button" onclick="selectFinancePreset('ค่าแรง')" class="px-2 py-0.5 rounded-lg text-[11px] font-medium bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/80 transition">
-                                    3. ค่าแรง
-                                </button>
-                            </div>
+                            <datalist id="expensePresetList">
+                                <option value="ค่าน้ำมันรถ"></option>
+                                <option value="ค่าน้ำมันเครื่องปั่นไฟ"></option>
+                                <option value="ค่าแรง"></option>
+                            </datalist>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">จำนวนเงิน (บาท) <span class="text-rose-500">*</span></label>
-                            <input type="number" id="financeAmount" step="any" min="0.01" placeholder="เช่น 500" 
-                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <label for="financeAmount" class="block text-xs font-semibold text-slate-700 mb-1">จำนวนเงิน (บาท) *</label>
+                            <input type="number" id="financeAmount" min="0" step="any" placeholder="0"
+                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่ทำรายการ <span class="text-rose-500">*</span></label>
-                            <input type="date" id="financeDate" 
+                            <label for="financeDate" class="block text-xs font-semibold text-slate-700 mb-1">วันที่ *</label>
+                            <input type="date" id="financeDate"
                                 class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุเพิ่มเติม</label>
-                            <input type="text" id="financeNote" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)" 
+                            <label for="financeNote" class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุเพิ่มเติม</label>
+                            <input type="text" id="financeNote" placeholder="เช่น เติมปั๊ม ปตท. ก่อนออกบิน"
                                 class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold flex items-center justify-center gap-1.5 shadow-xs transition">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        <span>บันทึกรายการ</span>
+                    <button type="submit" class="w-full py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition">
+                        บันทึกรายการ
                     </button>
                 </form>
 
-                <!-- รายการย้อนหลัง -->
                 <div class="space-y-2">
-                    <div class="flex items-center justify-between text-xs font-bold text-slate-600">
-                        <span>ประวัติรายรับ - รายจ่ายเพิ่มเติม</span>
-                        <span id="financeRecordCount" class="text-slate-400 font-normal">0 รายการ</span>
+                    <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
+                        <span>รายการที่บันทึกไว้</span>
+                        <span id="financeRecordCount">0 รายการ</span>
                     </div>
-                    <div id="financeHistoryList" class="space-y-2 max-h-52 overflow-y-auto pr-0.5">
-                        <!-- รายการจะถูกสร้างด้วย JavaScript -->
-                    </div>
+                    <div id="financeHistoryList" class="space-y-2 max-h-56 overflow-y-auto"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- MODAL: เลือกช่องทางการรับเงินเมื่อกด เสร็จสิ้น -->
+    <!-- MODAL: เลือกวิธีรับเงินเมื่อกดเสร็จสิ้น -->
     <!-- ========================================== -->
     <div id="paymentSelectModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 space-y-4">
-            <div class="text-center space-y-1">
-                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                    <i data-lucide="banknote" class="w-6 h-6"></i>
+            <div class="flex items-start justify-between gap-2">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">บันทึกการรับเงินของงานนี้</h3>
+                    <p id="paymentSelectJobInfo" class="text-xs text-slate-500 mt-0.5">-</p>
                 </div>
-                <h3 class="text-base font-bold text-slate-800">บันทึกสถานะการรับเงิน</h3>
-                <p id="paymentSelectJobInfo" class="text-xs text-slate-500">เลือกการรับเงินสำหรับงานที่เสร็จสิ้น</p>
+                <button type="button" onclick="closePaymentSelectModal()" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
             </div>
 
-            <div class="space-y-2">
-                <button type="button" onclick="confirmCompleteWithPayment('cash')" 
-                    class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-sm font-bold flex items-center justify-between transition shadow-xs">
+            <div class="grid grid-cols-1 gap-2.5">
+                <button type="button" onclick="confirmCompleteWithPayment('cash')" class="w-full py-3 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold text-sm flex items-center justify-between transition">
                     <span>จ่ายเงินสด</span>
-                    <i data-lucide="coins" class="w-4 h-4"></i>
+                    <i data-lucide="banknote" class="w-4 h-4 text-emerald-600"></i>
                 </button>
-                <button type="button" onclick="confirmCompleteWithPayment('transfer')" 
-                    class="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white text-sm font-bold flex items-center justify-between transition shadow-xs">
-                    <span>โอนผ่านธนาคาร</span>
-                    <i data-lucide="landmark" class="w-4 h-4"></i>
+                <button type="button" onclick="confirmCompleteWithPayment('transfer')" class="w-full py-3 px-4 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 font-bold text-sm flex items-center justify-between transition">
+                    <span>โอนธนาคาร</span>
+                    <i data-lucide="landmark" class="w-4 h-4 text-sky-600"></i>
                 </button>
-                <button type="button" onclick="confirmCompleteWithPayment('unpaid')" 
-                    class="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-[0.99] text-white text-sm font-bold flex items-center justify-between transition shadow-xs">
+                <button type="button" onclick="confirmCompleteWithPayment('unpaid')" class="w-full py-3 px-4 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-sm flex items-center justify-between transition">
                     <span>ค้าง</span>
-                    <i data-lucide="clock-alert" class="w-4 h-4"></i>
+                    <i data-lucide="clock" class="w-4 h-4 text-amber-600"></i>
                 </button>
-            </div>
-
-            <button type="button" onclick="closePaymentSelectModal()" class="w-full py-2 rounded-xl text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
-                ยกเลิก
-            </button>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- MODAL: รายการค้างชำระ (ดูและอัปเดตเป็น จ่ายสด / โอน) -->
-    <!-- ========================================== -->
-    <div id="unpaidModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden my-auto">
-            <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4 text-white flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="clock-alert" class="w-5 h-5"></i>
-                    <div>
-                        <h2 class="text-base sm:text-lg font-bold leading-tight">รายการค้างชำระ</h2>
-                        <p class="text-[11px] text-amber-50">กดเลือก จ่ายสด หรือ โอน เพื่อย้ายยอดเข้าช่องทันที</p>
-                    </div>
-                </div>
-                <button type="button" onclick="closeUnpaidModal()" class="p-1.5 hover:bg-white/20 rounded-lg transition">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <div class="p-4 sm:p-5 space-y-3 max-h-[80vh] overflow-y-auto">
-                <div class="flex items-center justify-between bg-amber-50 px-3.5 py-2.5 rounded-xl border border-amber-200/80">
-                    <span class="text-xs font-semibold text-amber-900">ยอดค้างรวมตามเดือนที่เลือก</span>
-                    <span id="unpaidModalTotal" class="text-base font-bold text-amber-700">฿0</span>
-                </div>
-
-                <div id="unpaidListContainer" class="space-y-2.5">
-                    <!-- รายการค้างชำระจะถูกเรนเดอร์ด้วย JavaScript -->
-                </div>
             </div>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- MODAL: QR รับเงินเมื่อเลือก โอน จากช่องค้าง -->
+    <!-- MODAL: รายการค้างชำระ -->
     <!-- ========================================== -->
-    <div id="qrPaymentModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden my-auto">
-            <div class="bg-gradient-to-r from-sky-600 to-indigo-600 px-5 py-4 text-white flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="qr-code" class="w-5 h-5"></i>
-                    <div>
-                        <h2 class="text-base sm:text-lg font-bold leading-tight">QR รับเงิน (โอนผ่านธนาคาร)</h2>
-                        <p id="qrCustomerSubtitle" class="text-[11px] text-sky-100">สแกนรับเงินจากรายการค้างชำระ</p>
-                    </div>
+    <div id="unpaidModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden overflow-y-auto p-3 sm:p-6">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-auto overflow-hidden my-4">
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold">รายการค้างชำระ</h2>
+                    <p class="text-xs text-amber-100">กดเลือกวิธีรับเงินเมื่อลูกค้าจ่ายแล้ว ยอดจะย้ายไปช่องที่เลือกทันที</p>
                 </div>
-                <button type="button" onclick="closeQrPaymentModal()" class="p-1.5 hover:bg-white/20 rounded-lg transition">
+                <button type="button" onclick="closeUnpaidModal()" class="p-1.5 rounded-lg hover:bg-white/20 transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <div class="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
-                <!-- ยอดเงินที่ต้องโอน -->
-                <div class="bg-sky-50 border border-sky-200/80 rounded-xl p-3.5 text-center space-y-0.5">
-                    <span class="block text-xs text-sky-800 font-medium">ยอดรับเงินสุทธิ</span>
-                    <span id="qrAmountDisplay" class="text-2xl font-bold text-sky-700">฿0</span>
-                    <span id="qrJobDetailDisplay" class="block text-[11px] text-slate-500">-</span>
+            <div class="p-4 sm:p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+                <div class="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    <span class="text-xs font-semibold text-amber-900">ยอดค้างรวม</span>
+                    <span id="unpaidModalTotal" class="text-lg font-bold text-amber-700">฿0</span>
                 </div>
 
-                <!-- กรอบแสดงรูป QR หรือ QR ที่สร้างอัตโนมัติ -->
-                <div class="flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-4 min-h-[220px]">
-                    <img id="qrUploadedImagePreview" src="" alt="QR รับเงิน" class="hidden max-h-56 w-auto rounded-xl object-contain shadow-xs">
+                <div id="unpaidListContainer" class="space-y-2.5"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: QR รับเงินเมื่อกดเลือก โอน -->
+    <!-- ========================================== -->
+    <div id="qrPaymentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden overflow-y-auto p-3 sm:p-6">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto overflow-hidden my-4">
+            <div class="bg-gradient-to-r from-sky-600 to-indigo-600 text-white px-5 py-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold">QR รับเงินค่าบริการ</h2>
+                    <p id="qrCustomerSubtitle" class="text-xs text-sky-100">-</p>
+                </div>
+                <button type="button" onclick="closeQrPaymentModal()" class="p-1.5 rounded-lg hover:bg-white/20 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-4 sm:p-5 space-y-4 max-h-[82vh] overflow-y-auto">
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3.5 text-center space-y-0.5">
+                    <span class="text-xs font-medium text-sky-800">ยอดโอนชำระ</span>
+                    <p id="qrAmountDisplay" class="text-2xl font-bold text-sky-700">฿0</p>
+                    <p id="qrJobDetailDisplay" class="text-[11px] text-slate-600 truncate">-</p>
+                </div>
+
+                <!-- แสดงรูป QR ที่อัปโหลด หรือ QR PromptPay ที่สร้างอัตโนมัติ -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 min-h-[210px]">
+                    <img id="qrUploadedImagePreview" src="" alt="QR รับเงิน" class="hidden max-h-52 w-auto rounded-xl object-contain border border-slate-200 bg-white p-1">
                     <div id="qrGeneratedContainer" class="flex flex-col items-center justify-center"></div>
-                    <p id="qrAccountCaption" class="text-xs font-semibold text-slate-700 mt-3 text-center">ยังไม่ได้ตั้งค่าบัญชีพร้อมเพย์/QR</p>
+                    <p id="qrAccountCaption" class="text-xs text-slate-600 text-center font-medium"></p>
                 </div>
 
-                <!-- ตั้งค่าบัญชีรับเงิน / อัปโหลดรูป QR -->
-                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-2.5">
+                <!-- ตั้งค่าพร้อมเพย์ / อัปโหลดรูป QR ของผู้ใช้ -->
+                <div class="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3 space-y-2.5">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-slate-700">ตั้งค่า QR ของคุณ</span>
-                        <label class="cursor-pointer inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 hover:text-sky-800 bg-sky-100/80 px-2.5 py-1 rounded-lg transition">
-                            <i data-lucide="image-plus" class="w-3.5 h-3.5"></i>
-                            <span>อัปโหลดรูป QR</span>
-                            <input type="file" id="qrImageUploadInput" accept="image/*" onchange="handleQrImageUpload(event)" class="sr-only">
-                        </label>
+                        <button type="button" id="clearUploadedQrBtn" onclick="clearUploadedQrImage()" class="hidden text-[11px] text-rose-600 hover:underline font-medium">
+                            ลบรูป QR ที่อัปโหลด
+                        </button>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">เบอร์พร้อมเพย์ / เลขบัตร / บัญชี</label>
-                            <input type="text" id="qrPromptPayId" placeholder="เช่น 0812345678" oninput="refreshQrPreview()" 
-                                class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <label for="qrPromptPayId" class="block text-[11px] font-semibold text-slate-600 mb-1">เบอร์พร้อมเพย์ / เลขบัตร</label>
+                            <input type="text" id="qrPromptPayId" oninput="refreshQrPreview()" placeholder="เช่น 0812345678"
+                                class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-sky-500">
                         </div>
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">ชื่อบัญชีรับเงิน</label>
-                            <input type="text" id="qrAccountName" placeholder="เช่น นายสมพงษ์ โดรนเกษตร" oninput="refreshQrPreview()" 
+                            <label for="qrAccountName" class="block text-[11px] font-semibold text-slate-600 mb-1">ชื่อบัญชี</label>
+                            <input type="text" id="qrAccountName" oninput="refreshQrPreview()" placeholder="เช่น บจก. แอ็กริโดรน"
                                 class="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-sky-500">
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-1">
-                        <button type="button" onclick="saveQrSettings()" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold transition">
-                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                            <span>บันทึกข้อมูล QR</span>
-                        </button>
-                        <button type="button" id="clearUploadedQrBtn" onclick="clearUploadedQrImage()" class="hidden text-[11px] text-rose-600 hover:underline">
-                            ลบรูป QR ที่อัปโหลด
+                    <div class="flex items-center justify-between gap-2 pt-1">
+                        <label class="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 cursor-pointer transition">
+                            <i data-lucide="image-plus" class="w-3.5 h-3.5 text-sky-600"></i>
+                            <span>อัปโหลดรูป QR</span>
+                            <input type="file" id="qrImageUploadInput" accept="image/*" onchange="handleQrImageUpload(event)" class="hidden">
+                        </label>
+                        <button type="button" onclick="saveQrSettings()" class="py-2 px-3 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold transition">
+                            บันทึกบัญชี
                         </button>
                     </div>
                 </div>
@@ -805,7 +741,7 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- MODAL: กล่องข้อความยืนยัน (แทน confirm()) -->
+    <!-- MODAL: กล่องข้อความยืนยัน -->
     <!-- ========================================== -->
     <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 space-y-4 text-center">
@@ -1109,7 +1045,9 @@
         function renderAll() {
             updateDashboardStats();
             renderSchedules();
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
 
         // อัปเดตตัวเลขบนแดชบอร์ดและตัวเลือกเดือนสำหรับยอดรายรับรายเดือน (หักลบรายจ่ายแล้ว)
@@ -1119,7 +1057,7 @@
             const totalJobs = schedules.length;
             const pendingJobs = schedules.filter(s => s.status !== 'เสร็จสิ้น').length;
             const todayJobs = schedules.filter(s => s.appointmentDate === today && s.status !== 'เสร็จสิ้น').length;
-            
+
             const totalRai = schedules.reduce((sum, item) => sum + Number(item.areaRai || 0), 0);
 
             const jobRevenueAll = schedules.reduce((sum, item) => sum + (Number(item.areaRai || 0) * Number(item.pricePerRai || 0)), 0);
@@ -1278,7 +1216,7 @@
             if (filtered.length === 0) {
                 listContainer.innerHTML = '';
                 emptyState.classList.remove('hidden');
-                lucide.createIcons();
+                if (typeof lucide !== 'undefined') lucide.createIcons();
                 return;
             }
 
@@ -1314,7 +1252,7 @@
             }
 
             listContainer.innerHTML = html;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function buildFullScheduleCard(item, isCompletedExpanded = false) {
@@ -1327,7 +1265,6 @@
             return `
             <article class="bg-white rounded-2xl shadow-sm border ${isToday ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-100'} overflow-hidden flex flex-col justify-between transition hover:shadow-md">
                 <div class="p-4 sm:p-5 space-y-3.5">
-                    <!-- ส่วนหัวการ์ด -->
                     <div class="flex items-start justify-between gap-2">
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-1.5 mb-1">
@@ -1353,7 +1290,6 @@
                         </div>
                     </div>
 
-                    <!-- รายละเอียดพิกัดและพืช -->
                     <div class="space-y-1.5 text-xs sm:text-sm text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <div class="flex items-start gap-2">
                             <i data-lucide="map-pin" class="w-4 h-4 text-rose-500 shrink-0 mt-0.5"></i>
@@ -1371,7 +1307,6 @@
                         </div>
                     </div>
 
-                    <!-- สรุปพารามิเตอร์น้ำและการบินโดรน -->
                     <div class="grid grid-cols-4 gap-1.5 text-center bg-sky-50/70 p-2.5 rounded-xl border border-sky-100">
                         <div>
                             <span class="block text-[10px] text-slate-500">น้ำยารวม</span>
@@ -1398,7 +1333,6 @@
                     </p>` : ''}
                 </div>
 
-                <!-- แถบปุ่มดำเนินการด้านล่าง -->
                 <div class="px-4 py-3 bg-slate-50/80 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-1.5">
                         <a href="tel:${cleanPhone}" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition" title="โทรหาลูกค้า">
@@ -1460,7 +1394,7 @@
                     <button type="button" onclick="settleUnpaidJob('${item.id}', 'cash')" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 transition" title="บันทึกว่าจ่ายเงินสดแล้ว">
                         จ่ายสด
                     </button>
-                    <button type="button" onclick="settleUnpaidJob('${item.id}', 'transfer')" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200/80 transition" title="บันทึกว่าโอนแล้ว">
+                    <button type="button" onclick="openQrPaymentForJob('${item.id}')" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200/80 transition" title="เปิด QR รับเงินโอน">
                         โอน
                     </button>` : ''}
                     <button type="button" onclick="repeatSchedule('${item.id}')" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/70 transition">
@@ -1537,7 +1471,7 @@
 
             calculateAll();
             document.getElementById('formModal').classList.remove('hidden');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function repeatSchedule(sourceId) {
@@ -1570,7 +1504,7 @@
             document.getElementById('notes').value = item.notes || '';
 
             setCalculationMode(item.calcMode || 'flow', true);
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function closeFormModal() {
@@ -1593,7 +1527,7 @@
             updateDashboardStats();
             renderFinanceList();
             document.getElementById('financeModal').classList.remove('hidden');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function closeFinanceModal() {
@@ -1640,7 +1574,7 @@
             document.getElementById('financeNote').value = '';
             updateDashboardStats();
             renderFinanceList();
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
             showToast(type === 'expense' ? 'บันทึกรายจ่ายและหักลบยอดแล้ว' : 'บันทึกรายรับเพิ่มเติมแล้ว');
         }
 
@@ -1649,7 +1583,7 @@
             saveToLocalStorage();
             updateDashboardStats();
             renderFinanceList();
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
             showToast('ลบรายการเรียบร้อยแล้ว');
         }
 
@@ -1708,8 +1642,8 @@
             const secondMetricLabel = document.getElementById('calcSecondMetricLabel');
 
             if (normalizedMode === 'ratePerRai') {
-                rateBtn.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-emerald-600 text-white shadow-2xs';
-                flowBtn.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-transparent text-sky-800 hover:bg-sky-50';
+                rateBtn.className = 'py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-emerald-600 text-white';
+                flowBtn.className = 'py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-transparent text-sky-800 hover:bg-sky-50';
                 rateGroup.classList.remove('hidden');
                 flowGroup.classList.add('hidden');
                 rateRaiGroup.classList.remove('hidden');
@@ -1717,8 +1651,8 @@
                 rateRaiInput.value = areaRaiInput.value;
                 secondMetricLabel.textContent = '🚿 อัตราไหลที่ต้องใช้';
             } else {
-                flowBtn.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-sky-600 text-white shadow-2xs';
-                rateBtn.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition bg-transparent text-sky-800 hover:bg-sky-50';
+                flowBtn.className = 'py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-sky-600 text-white';
+                rateBtn.className = 'py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-transparent text-sky-800 hover:bg-sky-50';
                 flowGroup.classList.remove('hidden');
                 rateGroup.classList.add('hidden');
                 distanceGroup.classList.remove('hidden');
@@ -1856,7 +1790,7 @@
                     usageRatePerRai: parseFloat(document.getElementById('usageRatePerRai').value) || 5.0,
                     tankCapacity: parseFloat(document.getElementById('tankCapacity').value) || 30
                 });
-                
+
                 const newEntry = {
                     id: id || 'job-' + Date.now(),
                     calcMode,
@@ -1947,7 +1881,7 @@
         function toggleComplete(id) {
             const item = schedules.find(s => String(s.id) === String(id));
             if (!item) return;
-            
+
             if (item.status === 'เสร็จสิ้น') {
                 item.status = 'รอดำเนินการ';
                 expandedCompletedIds.delete(id);
@@ -1960,7 +1894,7 @@
                 document.getElementById('paymentSelectJobInfo').textContent =
                     `${item.customerName} • ${m.areaRai} ไร่ • ยอด ฿${m.totalPrice.toLocaleString('th-TH')}`;
                 document.getElementById('paymentSelectModal').classList.remove('hidden');
-                lucide.createIcons();
+                if (typeof lucide !== 'undefined') lucide.createIcons();
             }
         }
 
@@ -1985,11 +1919,11 @@
             showToast(`บันทึก "เสร็จสิ้น" (${badge.label}) เรียบร้อย!`);
         }
 
-        // เปิดหน้าต่างดูรายการค้างชำระและกดเปลี่ยนเป็น 1. จ่ายสด หรือ 2. โอน
+        // เปิดหน้าต่างดูรายการค้างชำระและกดเปลี่ยนเป็น จ่ายสด หรือ โอน
         function openUnpaidModal() {
             renderUnpaidList();
             document.getElementById('unpaidModal').classList.remove('hidden');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function closeUnpaidModal() {
@@ -2035,11 +1969,11 @@
                         </p>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
-                        <button type="button" onclick="settleUnpaidJob('${item.id}', 'cash')" 
+                        <button type="button" onclick="settleUnpaidJob('${item.id}', 'cash')"
                             class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition">
                             จ่ายสด
                         </button>
-                        <button type="button" onclick="openQrPaymentForJob('${item.id}')" 
+                        <button type="button" onclick="openQrPaymentForJob('${item.id}')"
                             class="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold inline-flex items-center justify-center gap-1 transition">
                             <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
                             <span>โอน</span>
@@ -2055,13 +1989,13 @@
             if (!digits) return '';
 
             let target = digits;
-            let tag = '01'; // เบอร์โทรศัพท์
+            let tag = '01';
             if (digits.length === 10 && digits.startsWith('0')) {
                 target = '0066' + digits.slice(1);
                 tag = '01';
             } else if (digits.length >= 13) {
                 target = digits.slice(0, 15);
-                tag = '02'; // เลขบัตรประชาชน / Tax ID
+                tag = '02';
             } else {
                 return '';
             }
@@ -2085,7 +2019,6 @@
 
             payload += tlv('58', 'TH') + '6304';
 
-            // คำนวณ CRC16-CCITT (0xFFFF, poly 0x1021)
             let crc = 0xFFFF;
             for (let i = 0; i < payload.length; i++) {
                 crc ^= payload.charCodeAt(i) << 8;
@@ -2116,7 +2049,7 @@
 
             refreshQrPreview(m.totalPrice);
             document.getElementById('qrPaymentModal').classList.remove('hidden');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function closeQrPaymentModal() {
@@ -2228,7 +2161,7 @@
             saveToLocalStorage();
             renderAll();
             renderUnpaidList();
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
 
             const targetText = paymentMethod === 'cash' ? 'จ่ายเงินสด' : 'โอนผ่านธนาคาร';
             showToast(`ย้ายยอดของ "${item.customerName}" ไปที่ ${targetText} แล้ว`);
@@ -2252,7 +2185,7 @@
             document.getElementById('confirmMessage').textContent = message;
             pendingConfirmCallback = onConfirm;
             document.getElementById('confirmModal').classList.remove('hidden');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function closeConfirmModal() {
@@ -2372,7 +2305,7 @@
             const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
-            
+
             const link = document.createElement('a');
             link.setAttribute('href', url);
             link.setAttribute('download', `ตารางฉีดยาโดรน_${getTodayStr(0)}.csv`);
@@ -2390,7 +2323,7 @@
             const toast = document.getElementById('toast');
             document.getElementById('toastMessage').textContent = message;
             toast.classList.remove('translate-y-20', 'opacity-0');
-            
+
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => {
                 toast.classList.add('translate-y-20', 'opacity-0');
