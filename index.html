@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AgriDrone - ระบบจัดการตารางนัดฉีดพ่นยาด้วยโดรนการเกษตร</title>
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/svg+xml" href="./icon.svg">
@@ -18,6 +18,25 @@
     <!-- โหลดไลบรารีสร้าง QR Code (PromptPay / ข้อความ) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        /* ล็อกการซูมและป้องกันการเลื่อนซ้าย-ขวาบนมือถือ */
+        html, body {
+            touch-action: pan-x pan-y;
+            overscroll-behavior-y: none;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        /* บังคับฟอนต์ช่องกรอกข้อมูลบนมือถือ >= 16px เพื่อป้องกัน iOS Safari ซูมอัตโนมัติเมื่อแตะพิมพ์ */
+        @media (max-width: 767px) {
+            input[type="text"],
+            input[type="tel"],
+            input[type="number"],
+            input[type="date"],
+            select,
+            textarea {
+                font-size: 16px !important;
+            }
+        }
+
         /* บังคับเลย์เอาต์แดชบอร์ดเฉพาะหน้าจอมือถือ (กว้างน้อยกว่า 768px) */
         @media (max-width: 767px) {
             #mobileDashboardTopGrid {
@@ -1060,7 +1079,9 @@
 
             const totalRai = schedules.reduce((sum, item) => sum + Number(item.areaRai || 0), 0);
 
-            const jobRevenueAll = schedules.reduce((sum, item) => sum + (Number(item.areaRai || 0) * Number(item.pricePerRai || 0)), 0);
+            // นับยอดรายรับจากตารางบินเฉพาะงานที่กด "เสร็จสิ้น" แล้วเท่านั้น
+            const completedSchedules = schedules.filter(item => item.status === 'เสร็จสิ้น');
+            const jobRevenueAll = completedSchedules.reduce((sum, item) => sum + (Number(item.areaRai || 0) * Number(item.pricePerRai || 0)), 0);
             const extraIncomeAll = financeRecords
                 .filter(f => f.type === 'income')
                 .reduce((sum, f) => sum + Number(f.amount || 0), 0);
@@ -1104,7 +1125,7 @@
                 periodIncome = totalIncomeAll;
                 periodExpense = totalExpenseAll;
             } else {
-                const jobIncomePeriod = schedules
+                const jobIncomePeriod = completedSchedules
                     .filter(item => (item.appointmentDate || '').startsWith(selectedMonth))
                     .reduce((sum, item) => sum + (Number(item.areaRai || 0) * Number(item.pricePerRai || 0)), 0);
                 const extraIncomePeriod = financeRecords
@@ -1905,9 +1926,15 @@
 
         function confirmCompleteWithPayment(paymentMethod) {
             if (!pendingCompleteJobId) return;
-            const item = schedules.find(s => String(s.id) === String(pendingCompleteJobId));
+            const jobId = pendingCompleteJobId;
+            const item = schedules.find(s => String(s.id) === String(jobId));
             closePaymentSelectModal();
             if (!item) return;
+
+            if (paymentMethod === 'transfer') {
+                openQrPaymentForJob(jobId);
+                return;
+            }
 
             item.status = 'เสร็จสิ้น';
             item.paymentMethod = paymentMethod;
@@ -2158,13 +2185,14 @@
 
             item.status = 'เสร็จสิ้น';
             item.paymentMethod = paymentMethod;
+            expandedCompletedIds.delete(item.id);
             saveToLocalStorage();
             renderAll();
             renderUnpaidList();
             if (typeof lucide !== 'undefined') lucide.createIcons();
 
             const targetText = paymentMethod === 'cash' ? 'จ่ายเงินสด' : 'โอนผ่านธนาคาร';
-            showToast(`ย้ายยอดของ "${item.customerName}" ไปที่ ${targetText} แล้ว`);
+            showToast(`บันทึก "${item.customerName}" เป็น${targetText}เรียบร้อยแล้ว`);
         }
 
         // สลับย่อ/ขยายการ์ดงานที่เสร็จสิ้นแล้ว
@@ -2332,6 +2360,34 @@
 
         // เริ่มต้นทำงานเมื่อโหลดหน้าเว็บเสร็จ
         window.addEventListener('DOMContentLoaded', initApp);
+
+        // ป้องกันการจีบนิ้วซูม (Pinch-to-zoom) และ Double-tap zoom บนมือถือ (iOS Safari / Android)
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gesturechange', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gestureend', function (e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', function (e) {
+            if (e.touches && e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        let lastTouchEndTime = 0;
+        document.addEventListener('touchend', function (e) {
+            const now = Date.now();
+            if (now - lastTouchEndTime <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEndTime = now;
+        }, { passive: false });
     </script>
 </body>
 </html>
